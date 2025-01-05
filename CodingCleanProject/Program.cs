@@ -20,6 +20,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddDatabaseService(builder.Configuration);
 
+
 builder.Services.AddRepositories();
 
 builder.Services.AddTransient<QueryObject>();
