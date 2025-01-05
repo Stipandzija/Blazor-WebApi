@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CodingCleanProject.Dtos.Account
 {
-    public class RegisterDTO : Controller
+    public class RegisterDTO
     {
         [Required]
         public string? UserName { get; set; }

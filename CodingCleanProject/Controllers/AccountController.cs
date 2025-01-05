@@ -16,8 +16,7 @@ namespace CodingCleanProject.Controllers
             _userManager = userManager;
         }
 
-        [HttpPost]
-        [Route("{register}")]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
         {
             try
