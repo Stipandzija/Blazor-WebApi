@@ -68,7 +68,9 @@ namespace CodingCleanProject.Repository
                     stocks = queryObject.IsDecending ? stocks.OrderByDescending(x => x.CompanyName) : stocks.OrderBy(x => x.CompanyName);
                 }
             }
-            return await stocks.ToListAsync();
+            var skipNumber =(queryObject.PageNumber-1)*queryObject.PageSize;//koliko objekata prikazujemo po stranici
+
+            return await stocks.Skip(skipNumber).Take(queryObject.PageSize).ToListAsync();
         }
 
 
