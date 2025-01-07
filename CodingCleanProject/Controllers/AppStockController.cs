@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using CodingCleanProject.Interfaces;
 using CodingCleanProject.Dtos.Stock;
 using CodingCleanProject.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CodingCleanProject.Controllers
 {
@@ -22,6 +23,7 @@ namespace CodingCleanProject.Controllers
             _queryObject = queryObject;
         }
         [HttpGet("GetAll")]
+        [Authorize]
         public async Task<IActionResult> GetAllStocks()
         {
             var stocksModel = await _stockRepository.GetAllAsync();

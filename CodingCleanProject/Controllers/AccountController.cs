@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using CodingCleanProject.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Azure.Core;
 
 namespace CodingCleanProject.Controllers
 {
@@ -15,11 +16,13 @@ namespace CodingCleanProject.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
+        private readonly SignInManager<User> _signInManager;
 
-        public AccountController(UserManager<User> userManager, ITokenService tokenService)
+        public AccountController(UserManager<User> userManager, ITokenService tokenService,SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
+            _signInManager = signInManager;
         }
 
         [HttpPost("register")]
@@ -67,7 +70,7 @@ namespace CodingCleanProject.Controllers
                     Email = user.Email,
                     Token = accessToken
                 });
-                ;
+                
             }
             catch (Exception e)
             {
@@ -76,7 +79,7 @@ namespace CodingCleanProject.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] RegisterDTO loginDto)
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
             try
             {
@@ -84,16 +87,69 @@ namespace CodingCleanProject.Controllers
                     return BadRequest(ModelState);
 
                 var user = await _userManager.FindByNameAsync(loginDto.UserName);
-                if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
-                    return Unauthorized("Invalid username or password");
 
-                var accessToken = _tokenService.CreateToken(user);
+                // Ako korisnik postoji i ima refresh token potrebno provjerit je li validan
+                if (user == null)
+                    return Unauthorized("Invalid username");
 
-                var refreshToken = Guid.NewGuid().ToString();
-                await _tokenService.RevokeToken(refreshToken);
+                var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
 
-                // postavlja refresh token u HttpOnly
-                Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+                if (!result.Succeeded)
+                {
+                    return Unauthorized("Invalid password");
+                }
+
+                // ukoliko je korisnik prijavlje potrebvno provjerite refresh token i generirat novi access token
+                var refreshToken = Request.Cookies["RefreshToken"];
+                if (!string.IsNullOrEmpty(refreshToken))
+                {
+                    var userClaims = await _userManager.GetClaimsAsync(user);
+                    var storedRefreshToken = userClaims.FirstOrDefault(c => c.Type == "RefreshToken")?.Value;
+
+                    if (storedRefreshToken == refreshToken)
+                    {
+                        // Ako je refresh token validan, kreiraj novi access token
+                        var accessToken = _tokenService.CreateToken(user);
+
+                        var newRefreshTokenClaim = Guid.NewGuid().ToString();
+                        var oldClaim = userClaims.FirstOrDefault(c => c.Type == "RefreshToken");
+
+                        if (oldClaim != null)
+                        {
+                            await _userManager.RemoveClaimAsync(user, oldClaim);
+                        }
+                       
+                        await _userManager.AddClaimAsync(user, new Claim("RefreshToken", newRefreshTokenClaim));
+
+                        Response.Cookies.Append("RefreshToken", newRefreshTokenClaim, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = true,
+                            SameSite = SameSiteMode.Strict,
+                            Expires = DateTime.UtcNow.AddDays(7)
+                        });
+
+                        return Ok(new NewUserDTO
+                        {
+                            UserName = user.UserName,
+                            Email = user.Email,
+                            Token = accessToken
+                        });
+                    }
+                    else
+                    {
+                        return Unauthorized("Invalid or expired refresh token.");
+                    }
+                }
+
+                // ako nema refresh tokena potrebno je kreirat novi access token
+                var newAccessToken = _tokenService.CreateToken(user);
+                var newRefreshToken = Guid.NewGuid().ToString();
+
+                await _userManager.AddClaimAsync(user, new Claim("RefreshToken", newRefreshToken));
+
+                // postavljanje refresh tokena u coockie
+                Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -101,10 +157,11 @@ namespace CodingCleanProject.Controllers
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
 
-                return Ok(new
+                return Ok(new NewUserDTO
                 {
-                    AccessToken = accessToken,
-                    UserName = user.UserName
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Token = newAccessToken
                 });
             }
             catch (Exception e)
@@ -112,6 +169,7 @@ namespace CodingCleanProject.Controllers
                 return StatusCode(500, e.Message);
             }
         }
+
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken()

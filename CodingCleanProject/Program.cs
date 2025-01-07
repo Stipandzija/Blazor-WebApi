@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using CodingCleanProject.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,35 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 builder.Services.AddAuthenticationService(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Enter JWT token"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
+});
+
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
@@ -57,21 +86,21 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 
-app.Use(async (context, next) =>
-{
-    if (context.Request.Path == "/api/auth/login")
-    {
-        var token = "GENERATED-JWT-TOKEN";
-        context.Response.Cookies.Append("AuthToken", token, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true, // mora da ide preko https 
-            SameSite = SameSiteMode.Strict, // osgurava da se izbjegne Cross-site request forgery
-            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
-        });
-    }
-    await next();
-});
+//app.Use(async (context, next) =>
+//{
+//    if (context.Request.Path == "/api/auth/login")
+//    {
+//        var token = "GENERATED-JWT-TOKEN";
+//        context.Response.Cookies.Append("AuthToken", token, new CookieOptions
+//        {
+//            HttpOnly = true,
+//            Secure = true, // mora da ide preko https 
+//            SameSite = SameSiteMode.Strict, // osgurava da se izbjegne Cross-site request forgery
+//            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
+//        });
+//    }
+//    await next();
+//});
 app.UseAuthorization();
 
 app.MapControllers();
