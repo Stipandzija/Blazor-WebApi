@@ -15,6 +15,13 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader());
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -102,6 +109,7 @@ app.UseAuthentication();
 //    await next();
 //});
 app.UseAuthorization();
+app.UseCors("AllowAll");
 
 app.MapControllers();
 

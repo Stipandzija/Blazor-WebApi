@@ -1,6 +1,7 @@
 ﻿using CodingCleanProject.Interfaces;
 using Microsoft.Identity.Client;
 using System.Security.Cryptography;
+using CodingCleanProject.Models;
 
 namespace CodingCleanProject.Repository
 {
@@ -15,6 +16,5 @@ namespace CodingCleanProject.Repository
                 ExpiryDate = DateTime.UtcNow.AddDays(1)
             };
         }
-
     }
 }

@@ -18,7 +18,7 @@ namespace CodingCleanProject.Controllers
         private readonly ITokenService _tokenService;
         private readonly SignInManager<User> _signInManager;
 
-        public AccountController(UserManager<User> userManager, ITokenService tokenService,SignInManager<User> signInManager)
+        public AccountController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -70,7 +70,7 @@ namespace CodingCleanProject.Controllers
                     Email = user.Email,
                     Token = accessToken
                 });
-                
+
             }
             catch (Exception e)
             {
@@ -104,42 +104,14 @@ namespace CodingCleanProject.Controllers
                 if (!string.IsNullOrEmpty(refreshToken))
                 {
                     var userClaims = await _userManager.GetClaimsAsync(user);
-                    var storedRefreshToken = userClaims.FirstOrDefault(c => c.Type == "RefreshToken")?.Value;
-
-                    if (storedRefreshToken == refreshToken)
+                  
+                    var oldClaim = userClaims.FirstOrDefault(c => c.Type == "RefreshToken");
+                    if (oldClaim != null)
                     {
-                        // Ako je refresh token validan, kreiraj novi access token
-                        var accessToken = _tokenService.CreateToken(user);
-
-                        var newRefreshTokenClaim = Guid.NewGuid().ToString();
-                        var oldClaim = userClaims.FirstOrDefault(c => c.Type == "RefreshToken");
-
-                        if (oldClaim != null)
-                        {
-                            await _userManager.RemoveClaimAsync(user, oldClaim);
-                        }
-                       
-                        await _userManager.AddClaimAsync(user, new Claim("RefreshToken", newRefreshTokenClaim));
-
-                        Response.Cookies.Append("RefreshToken", newRefreshTokenClaim, new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = true,
-                            SameSite = SameSiteMode.Strict,
-                            Expires = DateTime.UtcNow.AddDays(7)
-                        });
-
-                        return Ok(new NewUserDTO
-                        {
-                            UserName = user.UserName,
-                            Email = user.Email,
-                            Token = accessToken
-                        });
+                        await _userManager.RemoveClaimAsync(user, oldClaim);
                     }
-                    else
-                    {
-                        return Unauthorized("Invalid or expired refresh token.");
-                    }
+                    Response.Cookies.Delete("RefreshToken");
+                    
                 }
 
                 // ako nema refresh tokena potrebno je kreirat novi access token
@@ -161,7 +133,7 @@ namespace CodingCleanProject.Controllers
                 {
                     UserName = user.UserName,
                     Email = user.Email,
-                    Token = newAccessToken
+                    Token = newAccessToken,
                 });
             }
             catch (Exception e)
@@ -172,6 +144,7 @@ namespace CodingCleanProject.Controllers
 
 
         [HttpPost("refresh")]
+        [Authorize]
         public async Task<IActionResult> RefreshToken()
         {
             try
@@ -207,7 +180,8 @@ namespace CodingCleanProject.Controllers
                 });
                 return Ok(new
                 {
-                    AccessToken = newAccessToken
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRefreshToken
                 });
             }
             catch (Exception e)
