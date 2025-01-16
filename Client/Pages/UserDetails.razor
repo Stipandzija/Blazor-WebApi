@@ -1,0 +1,50 @@
+﻿@page "/user-details"
+@inject Client.Services.UserService UserService
+@using Microsoft.AspNetCore.Components.Authorization
+
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+            <h3>User Details</h3>
+
+            @if (userDetails == null)
+            {
+                <p>Loading user details...</p>
+            }
+            else
+            {
+                <p><strong>Username:</strong> @userDetails.UserName</p>
+                <p><strong>Email:</strong> @userDetails.Email</p>
+
+                <h4>Roles</h4>
+                <ul>
+                    @foreach (var role in userDetails.Roles)
+                    {
+                        <li>@role</li>
+                    }
+                </ul>
+
+                <h4>Claims</h4>
+                <ul>
+                    @foreach (var claim in userDetails.Claims)
+                    {
+                        <li>@claim.Type: @claim.Value</li>
+                    }
+                </ul>
+            }
+        </Authorized>
+
+        <NotAuthorized>
+            <p>You must be logged in to view user details.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
+
+@code {
+    private Client.Services.UserDetailsModel? userDetails;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userDetails = await UserService.GetUserDetailsAsync();
+    }
+}

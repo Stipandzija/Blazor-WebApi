@@ -1,0 +1,61 @@
+﻿@page "/register"
+@inject HttpClient Http
+@inject BlazorClient.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+@using System.ComponentModel.DataAnnotations
+@using BlazorClient.Services
+@using static System.Net.WebRequestMethods
+
+<h3>Registration</h3>
+
+<EditForm Model="@registerDto" OnValidSubmit="HandleRegistration">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="userName">User Name</label>
+        <InputText id="userName" class="form-control" @bind-Value="registerDto.userName" />
+        <ValidationMessage For="@(() => registerDto.userName)" />
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email</label>
+        <InputText id="email" type="email" class="form-control" @bind-Value="registerDto.emailAddress" />
+        <ValidationMessage For="@(() => registerDto.emailAddress)" />
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password</label>
+        <InputText id="password" class="form-control" @bind-Value="registerDto.password" />
+        <ValidationMessage For="@(() => registerDto.password)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</EditForm>
+
+@if (registrationMessage != null)
+{
+    <div class="alert alert-info mt-3">
+        @registrationMessage
+    </div>
+}
+
+@code {
+    private RegisterDTO registerDto = new RegisterDTO();
+    private string registrationMessage;
+
+    private async Task HandleRegistration()
+    {
+        bool v = await AuthService.RegisterAsync(registerDto.userName, registerDto.emailAddress, registerDto.password);
+        var success = v;
+        if (success)
+        {
+            registrationMessage = "Registration successful. Please login.";
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            registrationMessage = "Registration failed. Please try again.";
+        }
+    }
+}

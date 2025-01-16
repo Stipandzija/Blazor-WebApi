@@ -28,7 +28,4 @@
 		<PackageReference Include="StackExchange.Redis" Version="2.8.24" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 	</ItemGroup>
-	<ItemGroup>
-	  <ProjectReference Include="..\BaseLibrary\BaseLibrary.csproj" />
-	</ItemGroup>  
 </Project>

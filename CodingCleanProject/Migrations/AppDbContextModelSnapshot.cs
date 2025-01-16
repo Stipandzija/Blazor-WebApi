@@ -51,7 +51,7 @@ namespace CodingCleanProject.Migrations
 
                     b.HasIndex("StockId");
 
-                    b.ToTable("comments");
+                    b.ToTable("comments", (string)null);
                 });
 
             modelBuilder.Entity("CodingCleanProject.Models.RefreshToken", b =>
@@ -79,7 +79,7 @@ namespace CodingCleanProject.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RefreshToken");
+                    b.ToTable("RefreshToken", (string)null);
                 });
 
             modelBuilder.Entity("CodingCleanProject.Models.Stock", b =>
@@ -110,7 +110,7 @@ namespace CodingCleanProject.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("stocks");
+                    b.ToTable("stocks", (string)null);
                 });
 
             modelBuilder.Entity("CodingCleanProject.Models.User", b =>
