@@ -7,30 +7,20 @@
         <Authorized>
             <h3>User Details</h3>
 
-            @if (userDetails == null)
+            @if (isLoading)
             {
-                <p>Loading user details...</p>
+                <p>Loading...</p>
             }
             else
             {
-                <p><strong>Username:</strong> @userDetails.UserName</p>
-                <p><strong>Email:</strong> @userDetails.Email</p>
-
-                <h4>Roles</h4>
-                <ul>
-                    @foreach (var role in userDetails.Roles)
-                    {
-                        <li>@role</li>
-                    }
-                </ul>
-
-                <h4>Claims</h4>
-                <ul>
-                    @foreach (var claim in userDetails.Claims)
-                    {
-                        <li>@claim.Type: @claim.Value</li>
-                    }
-                </ul>
+                @if (timeLeft == null)
+                {
+                    <p>Unable to retrieve token time left.</p>
+                }
+                else
+                {
+                    <p><strong>Dopuštenje:</strong> @timeLeft</p>
+                }
             }
         </Authorized>
 
@@ -41,10 +31,30 @@
 </CascadingAuthenticationState>
 
 @code {
-    private Client.Services.UserDetailsModel? userDetails;
+    private string? timeLeft;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        userDetails = await UserService.GetUserDetailsAsync();
+        try
+        {
+            var response = await UserService.GetTokenTimeLeftAsync();
+            if (response != null)
+            {
+                timeLeft = response;
+            }
+            else
+            {
+                timeLeft = "Unable to retrieve token time left.";
+            }
+        }
+        catch (Exception ex)
+        {
+            timeLeft = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 }

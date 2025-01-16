@@ -1,7 +1,10 @@
 ﻿namespace CodingCleanProject.Dtos.RefreshToken
 {
-    public class RefreshToken
+    public class RefreshTokenDTO
     {
-        public string? Token { get; set; }
+        public string RefreshToken { get; set; }
+        public string JwtToken { get; set;}
+
+
     }
 }

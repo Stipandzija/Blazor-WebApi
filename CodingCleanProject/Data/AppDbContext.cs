@@ -13,7 +13,7 @@ namespace CodingCleanProject.Data
         public AppDbContext(DbContextOptions dbContext) : base(dbContext) { }
         public DbSet<Stock> stocks { get; set; }
         public DbSet<Comment> comments { get; set; }
-        public DbSet<RefreshToken> RefreshToken { get; set; }
+        public DbSet<User> Users { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
 

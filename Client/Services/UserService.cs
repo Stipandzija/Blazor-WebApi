@@ -17,41 +17,47 @@ namespace Client.Services
             _localStorage = localStorageService;
         }
 
-        public async Task<UserDetailsModel?> GetUserDetailsAsync()
+        public async Task<string?> GetTokenTimeLeftAsync()
         {
             try
             {
-
                 var token = await _localStorage.GetItemAsync<string>("authToken");
-                Console.WriteLine(token.ToString());
-                
-                if (!string.IsNullOrEmpty(token))
+
+                if (string.IsNullOrEmpty(token))
                 {
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    Console.WriteLine("Token nije pronađen.");
+                    return null;
                 }
-               
-                return await _httpClient.GetFromJsonAsync<UserDetailsModel>("api/account/getUserDetails");
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.GetAsync("api/test/Dozvola");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return "Imas dopustenje";
+                }
+
+                Console.WriteLine($"Greška u dohvaćanju vremena tokena: {response.StatusCode}");
+                return $"Error: {response.StatusCode}";
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                return null;
+                Console.WriteLine($"Greška pri dohvaćanju vremena tokena: {ex.Message}");
+                return $"Error: {ex.Message}";
             }
         }
 
-    }
+        public class ClaimsResponseModel
+        {
+            public string UserId { get; set; } = string.Empty;
+            public List<ClaimDetails> Claims { get; set; } = new();
+        }
 
-    public class UserDetailsModel
-    {
-        public string UserName { get; set; }
-        public string Email { get; set; }
-        public List<string> Roles { get; set; }
-        public List<ClaimDetails> Claims { get; set; }
-    }
-
-    public class ClaimDetails
-    {
-        public string Type { get; set; }
-        public string Value { get; set; }
+        public class ClaimDetails
+        {
+            public string Type { get; set; } = string.Empty;
+            public string Value { get; set; } = string.Empty;
+        }
     }
 }

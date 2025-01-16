@@ -20,13 +20,14 @@ namespace BlazorClient.Services
         private readonly CustomAuthenticationStateProvider _authenticationStateProvider;
         private readonly IJSRuntime _jsRuntime;
 
-        public AuthService(CustomAuthenticationStateProvider authenticationStateProvider,HttpClient httpClient, ILocalStorageService localStorage, IJSRuntime jsRuntime)
+
+        public AuthService(CustomAuthenticationStateProvider customAuthenticationStateProvider, HttpClient httpClient, ILocalStorageService localStorage, IJSRuntime jsRuntime)
         {
             Console.WriteLine("AuthService created.");
             _httpClient = httpClient;
             _localStorage = localStorage;
             _jsRuntime = jsRuntime;
-            _authenticationStateProvider = authenticationStateProvider;
+            _authenticationStateProvider = customAuthenticationStateProvider;
         }
         public async Task<bool> LoginAsync(string username, string password)
         {
@@ -35,12 +36,13 @@ namespace BlazorClient.Services
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 if (result != null)
                 {
-                    await SetTokenAsync(result.Token, result.Expires);
-                    _authenticationStateProvider.MarkUserAsAuthenticated(result.Token);
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", result.Token);
+                    await SetTokenAsync(result.JwtToken);
+
+                    _authenticationStateProvider.MarkUserAsAuthenticated(result.JwtToken);
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", result.JwtToken);
                     return true;
                 }
             }
@@ -51,6 +53,7 @@ namespace BlazorClient.Services
 
             return false;
         }
+
         public async Task<bool> RegisterAsync(string username, string email, string password)
         {
             var request = new { UserName = username, EmailAddress = email, Password = password };
@@ -68,66 +71,62 @@ namespace BlazorClient.Services
             }
         }
 
-        public async Task LogoutAsync()
+        public async Task<bool> LogoutAsync()
         {
+            _authenticationStateProvider.MarkUserAsLoggedOut();
             await _localStorage.RemoveItemAsync("authToken");
-            _authenticationStateProvider.MarkUserAsLoggedOut(); 
-            await _jsRuntime.InvokeVoidAsync("deleteCookie", "RefreshToken");
+            var response = await _httpClient.PostAsJsonAsync("api/account/logout","");
 
             _httpClient.DefaultRequestHeaders.Authorization = null;
+
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Logout successful.");
+                return true;
+            }
+            return false;
         }
 
-        public async Task SetTokenAsync(string token, DateTime expiry)
+        public async Task SetTokenAsync(string token)
         {
             if (token == null)
             {
                 await _localStorage.RemoveItemAsync("authToken");
-                await _localStorage.RemoveItemAsync("authTokenExpires");
             }
             else
             {
-                await _localStorage.SetItemAsync("authToken", token);
-                await _localStorage.SetItemAsync("authTokenExpires", expiry.ToString("o"));
+                await _localStorage.SetItemAsync("authToken",token);
+
             }
         }
 
-        //public async Task<string> GetTokenAsync()
-        //{
-        //    var expiry = await _localStorage.GetItemAsync<string>("authTokenExpiry");
-        //    if (expiry != null)
-        //    {
-        //        if (DateTime.Parse(expiry.ToString()) > DateTime.Now)
-        //        {
-        //            return await _localStorage.GetItemAsync<string>("authToken");
-        //        }
-        //        else
-        //        {
-        //            await SetTokenAsync(null);
-        //        }
-        //    }
-        //    return null;
-        //}
-
-
-        public async Task<bool> RefreshTokenAsync()
+        public async Task<bool> RefreshAccessTokenAsync()
         {
-            var response = await _httpClient.PostAsync("api/account/refresh", null);
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
-                if (result != null)
-                {
-                    await _localStorage.SetItemAsync("authToken", result.Token);
-                    _httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+                var response = await _httpClient.PostAsync("api/account/RefreshToken", null);
 
-                    return true;
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+                    if (result != null && result.IsLogged)
+                    {
+                        await _localStorage.SetItemAsync("authToken", result.JwtToken);
+                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", result.JwtToken);
+                        return true;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error refreshing token: " + ex.Message);
             }
 
             return false;
         }
+
         public async Task<HttpResponseMessage> MakeAuthorizedRequest(HttpRequestMessage request)
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
@@ -144,7 +143,7 @@ namespace BlazorClient.Services
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 // u slucaju erroa novi token
-                var success = await RefreshTokenAsync();
+                var success = await RefreshAccessTokenAsync();
                 if (success)
                 {
                     // potrebno poslat ponovo zahtjev za tokenom
@@ -160,12 +159,15 @@ namespace BlazorClient.Services
 
     }
 
-    public class TokenResponse
+
+    public class LoginResponse
     {
-        public string Token { get; set; }
-        public string RefreshToken { get; set; }
-        public DateTime Expires { get; set; }
+        public bool IsLogged { get; set; } = false;
+        public string JwtToken { get; set; }
+        public string RefreshToken { get; internal set; }
+
     }
+
     public class RegisterDTO
     {
         [Required(ErrorMessage = "User name is required")]

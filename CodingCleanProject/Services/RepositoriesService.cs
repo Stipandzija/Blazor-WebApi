@@ -9,6 +9,8 @@ namespace CodingCleanProject.Services
         {
             services.AddScoped<IStockRepository, StockRepository>();
             services.AddScoped<ICommentRepository, ComnmentRepository>();
+            services.AddHttpContextAccessor();
+
         }
     }
 }

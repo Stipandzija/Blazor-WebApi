@@ -1,13 +1,23 @@
 ﻿@page "/logout"
-@inject BlazorClient.Services.AuthService AuthService
-@inject NavigationManager NavigationManager
+@inject BlazorClient.Services.AuthService authService
 
 @code {
-
     protected override async Task OnInitializedAsync()
     {
-        await AuthService.LogoutAsync();
-        NavigationManager.NavigateTo("/");
+        try
+        {
+            if (authService != null)
+            {
+                await authService.LogoutAsync();
+            }
+            else
+            {
+                Console.WriteLine("AuthService is null");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while logging out: {ex.Message}");
+        }
     }
-
 }

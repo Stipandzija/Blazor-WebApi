@@ -7,6 +7,9 @@ using CodingCleanProject.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Azure.Core;
+using CodingCleanProject.Dtos.RefreshToken;
+using System.Net.Http;
+using Microsoft.AspNetCore.Authentication;
 
 namespace CodingCleanProject.Controllers
 {
@@ -77,40 +80,28 @@ namespace CodingCleanProject.Controllers
                 {
                     return Unauthorized("Invalid password");
                 }
+                var refreshToken = _tokenService.GenerateRefreshToken();
 
-                var refreshToken = Request.Cookies["RefreshToken"];
-                if (!string.IsNullOrEmpty(refreshToken))
-                {
-                    var userClaims = await _userManager.GetClaimsAsync(user);
-                    var oldClaim = userClaims.FirstOrDefault(c => c.Type == "RefreshToken");
-                    if (oldClaim != null)
-                    {
-                        await _userManager.RemoveClaimAsync(user, oldClaim);
-                    }
-                    Response.Cookies.Delete("RefreshToken");
-                }
-                Console.WriteLine("refreshToken",refreshToken);
                 var newAccessToken = _tokenService.CreateToken(user);
-                var newRefreshToken = Guid.NewGuid().ToString();
-                Console.WriteLine("newRefreshToken", newRefreshToken);
 
-                await _userManager.AddClaimAsync(user, new Claim("RefreshToken", newRefreshToken));
-                Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.Now.AddMinutes(10);
+                await _userManager.UpdateAsync(user);
+
+                Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
                 {
                     HttpOnly = true,
+                    Expires = DateTime.Now.AddDays(1),
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddHours(2)
+                    SameSite = SameSiteMode.Strict
                 });
 
-                var expiresIn = DateTime.UtcNow.AddHours(2);
-
-                return Ok(new NewUserDTO
+                return Ok(new LoginResponse
                 {
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Token = newAccessToken,
-                    Expires = expiresIn
+                    IsLogged=true,
+                    JwtToken = newAccessToken,
+                    RefreshToken = refreshToken
+
                 });
             }
             catch (Exception e)
@@ -118,91 +109,70 @@ namespace CodingCleanProject.Controllers
                 return StatusCode(500, e.Message);
             }
         }
-
-        [HttpPost("refresh")]
         [Authorize]
-        public async Task<IActionResult> RefreshToken()
+        [HttpPost]
+        [Route("RefreshToken")]
+        public async Task<IActionResult> GenereateNewRefreshToken(RefreshTokenDTO refreshTokenDTO) 
         {
-            try
+            var loginresult = await _tokenService.GenerateNewRefreshToken(refreshTokenDTO);
+            Response.Cookies.Append("RefreshToken", loginresult.RefreshToken, new CookieOptions
             {
-                var refreshToken = Request.Cookies["RefreshToken"];
-                if (string.IsNullOrEmpty(refreshToken))
-                    return Unauthorized("nedostaje refresh token");
-
-                var users = await _userManager.Users.ToListAsync();
-                var user = users.FirstOrDefault(u =>
-                    _userManager.GetClaimsAsync(u).Result.Any(c => c.Type == "RefreshToken" && c.Value == refreshToken));
-                if (user == null)
-                    return Unauthorized("Krivi ili zastarjeli token");
-
-                var newAccessToken = _tokenService.CreateToken(user);
-
-                var newRefreshToken = Guid.NewGuid().ToString();
-
-                // uklonit sve stare refresh tokene iz claimova korisnika
-                var claims = await _userManager.GetClaimsAsync(user);
-                var oldRefreshTokens = claims.Where(c => c.Type == "RefreshToken").ToList();
-
-                foreach (var oldToken in oldRefreshTokens)
-                {
-                    var removeResult = await _userManager.RemoveClaimAsync(user, oldToken);
-                    if (!removeResult.Succeeded)
-                        return StatusCode(500, "Nemoguće ukloniti stari refresh token");
-                }
-
-                var addNewClaimResult = await _userManager.AddClaimAsync(user, new Claim("RefreshToken", newRefreshToken));
-                if (!addNewClaimResult.Succeeded)
-                    return StatusCode(500, "Nemoguće dodati novi refresh token");
-
-                Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddSeconds(30)
-                });
-
-                return Ok(new
-                {
-                    AccessToken = newAccessToken,
-                    RefreshToken = newRefreshToken
-                });
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7),
+                Secure = true,
+                SameSite = SameSiteMode.Strict
+            });
+            if (loginresult.IsLogged)
+            { 
+                return Ok(loginresult);
             }
-            catch (Exception e)
-            {
-                return StatusCode(500, e.Message);
-            }
+            return Unauthorized();
         }
 
         [HttpGet("my-claims")]
         [Authorize]
         public async Task<IActionResult> GetMyClaims()
         {
-            var refreshToken = Request.Cookies["RefreshToken"];
-            if (string.IsNullOrEmpty(refreshToken))
-                return Unauthorized("nedostaje refresh roken");
-
-            var users = await _userManager.Users.ToListAsync();
-            var user = users.FirstOrDefault(u =>
-                _userManager.GetClaimsAsync(u).Result.Any(c => c.Type == "RefreshToken" && c.Value == refreshToken));
-
-            if (user == null)
-                return Unauthorized("Korisnik nije pronađen.");
-
-            var claims = await _userManager.GetClaimsAsync(user);
-
-            return Ok(new
+            try
             {
-                UserId = user.Id,
-                Claims = claims.Select(c => new { c.Type, c.Value })
-            });
+                var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    return Unauthorized("Access token nije pronaden");
+                }
+                var principal = _tokenService.GetTokenPrincipal(accessToken);
+
+                if (principal == null)
+                {
+                    return Unauthorized("Token nije validan");
+                }
+
+                var user = await _userManager.FindByNameAsync(principal.Identity.Name);
+
+                if (user == null)
+                {
+                    return Unauthorized("Korisnik nije pronaden");
+                }
+                var claims = await _userManager.GetClaimsAsync(user);
+                return Ok(new
+                {
+                    UserId = user.Id,
+                    Claims = claims.Select(c => new { c.Type, c.Value })
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500,ex.Message);
+            }
         }
+
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             Response.Cookies.Delete("RefreshToken");
+            HttpContext.SignOutAsync();
 
-            return Ok("Logged out successfully.");
+            return Ok("Logged out successfully");
         }
         [Authorize]
         [HttpGet("getUserDetails")]
@@ -213,12 +183,12 @@ namespace CodingCleanProject.Controllers
                 var userName = User.Identity?.Name;
 
                 if (string.IsNullOrEmpty(userName))
-                    return Unauthorized("User is not logged in.");
+                    return Unauthorized("User is not logged in");
 
                 var user = await _userManager.FindByNameAsync(userName);
 
                 if (user == null)
-                    return NotFound("User not found.");
+                    return NotFound("User not found");
 
                 var roles = await _userManager.GetRolesAsync(user);
                 var claims = await _userManager.GetClaimsAsync(user);

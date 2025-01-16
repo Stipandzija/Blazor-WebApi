@@ -1,11 +1,16 @@
-﻿using CodingCleanProject.Models;
+﻿using CodingCleanProject.Dtos.Account;
+using CodingCleanProject.Dtos.RefreshToken;
+using CodingCleanProject.Models;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CodingCleanProject.Interfaces
 {
     public interface ITokenService
     {
-        public Task RevokeToken(string token);
-        public Task<bool> IsTokenActive(string token);
         string CreateToken(User user);
+        string GenerateRefreshToken();
+        ClaimsPrincipal? GetTokenPrincipal(string token);
+        Task<LoginResponse> GenerateNewRefreshToken(RefreshTokenDTO refreshTokenDTO);
     }
 }

@@ -5,7 +5,6 @@ using Blazored.LocalStorage;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.WebUtilities;
 using System.Text.Json;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
@@ -18,38 +17,32 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         _localStorage = localStorage;
         _httpClient = httpClient;
     }
+
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var savedToken = await _localStorage.GetItemAsync<string>("authToken");
-        var expiry = await _localStorage.GetItemAsync<string>("authTokenExpiry");
-        var anonymousState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-
-        // Not authenticated
-        if (string.IsNullOrWhiteSpace(savedToken))
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        if (string.IsNullOrEmpty(token))
         {
-            return anonymousState;
+            var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
+            return new AuthenticationState(anonymous);
         }
 
-        var claims = ParseClaimsFromJwt(savedToken);
+        var claims = ParseClaimsFromJwt(token);
+        var identity = new ClaimsIdentity(claims, "Bearer");
+        var user = new ClaimsPrincipal(identity);
 
-        // Checks the exp field of the token
-        if (DateTime.Parse(expiry.ToString()) < DateTime.Now)
-        {
-            await _localStorage.RemoveItemAsync("authToken");
-            await _localStorage.RemoveItemAsync("authTokenExpiry");
-            MarkUserAsLoggedOut();
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-        }
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", savedToken);
-
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt")));
+        return new AuthenticationState(user);
     }
+
     public void MarkUserAsAuthenticated(string token)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
-        var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
-        NotifyAuthenticationStateChanged(authState);
+        var claims = ParseClaimsFromJwt(token);
+        var identity = new ClaimsIdentity(claims, "Bearer");
+        var user = new ClaimsPrincipal(identity);
+
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
     }
 
     public void MarkUserAsLoggedOut()
@@ -59,7 +52,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
     }
 
-    public static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
         var payload = jwt.Split('.')[1];
         var jsonBytes = ParseBase64WithoutPadding(payload);
@@ -75,20 +68,5 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             case 3: base64 += "="; break;
         }
         return Convert.FromBase64String(base64);
-    }
-    public void NotifyUserAuthentication(string token)
-    {
-        var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "Bearer");
-        var user = new ClaimsPrincipal(identity);
-        var authState = Task.FromResult(new AuthenticationState(user));
-
-        NotifyAuthenticationStateChanged(authState);
-    }
-    public void NotifyUserLogout()
-    {
-        var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
-        var authState = Task.FromResult(new AuthenticationState(anonymous));
-
-        NotifyAuthenticationStateChanged(authState);
     }
 }

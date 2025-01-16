@@ -51,35 +51,7 @@ namespace CodingCleanProject.Migrations
 
                     b.HasIndex("StockId");
 
-                    b.ToTable("comments", (string)null);
-                });
-
-            modelBuilder.Entity("CodingCleanProject.Models.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RefreshToken", (string)null);
+                    b.ToTable("comments");
                 });
 
             modelBuilder.Entity("CodingCleanProject.Models.Stock", b =>
@@ -110,7 +82,7 @@ namespace CodingCleanProject.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("stocks", (string)null);
+                    b.ToTable("stocks");
                 });
 
             modelBuilder.Entity("CodingCleanProject.Models.User", b =>
@@ -154,6 +126,12 @@ namespace CodingCleanProject.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Risk")
                         .HasColumnType("int");
@@ -210,13 +188,13 @@ namespace CodingCleanProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "2ab71a3a-31a7-4924-86a7-b9a242374e4a",
+                            Id = "aabe394d-9310-4873-a19e-6e321d5610ff",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "a1825631-c11c-47ff-8d29-375b1c39d999",
+                            Id = "4cc24ddc-a379-4de3-b66a-6ae9ccb9c046",
                             Name = "User",
                             NormalizedName = "USER"
                         });
