@@ -23,7 +23,7 @@ namespace BlazorClient.Services
 
         public AuthService(CustomAuthenticationStateProvider customAuthenticationStateProvider, HttpClient httpClient, ILocalStorageService localStorage, IJSRuntime jsRuntime)
         {
-            Console.WriteLine("AuthService created.");
+            Console.WriteLine("AuthService created");
             _httpClient = httpClient;
             _localStorage = localStorage;
             _jsRuntime = jsRuntime;
@@ -61,7 +61,7 @@ namespace BlazorClient.Services
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Registration successful.");
+                Console.WriteLine("Registration successful");
                 return true;
             }
             else

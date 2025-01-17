@@ -83,7 +83,7 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
 
 
 var app = builder.Build();
-
+app.UseMiddleware<CustomExceptionMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -4,11 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using CodingCleanProject.Dtos.Account;
 using Microsoft.AspNetCore.Authorization;
 using CodingCleanProject.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using Azure.Core;
 using CodingCleanProject.Dtos.RefreshToken;
-using System.Net.Http;
 using Microsoft.AspNetCore.Authentication;
 
 namespace CodingCleanProject.Controllers
@@ -17,102 +14,89 @@ namespace CodingCleanProject.Controllers
     [ApiController]
     public class AccountController : Controller
     {
-        private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
-        private readonly SignInManager<User> _signInManager;
+        private readonly ILoginService _loginService;
+        private readonly IRegisterRepository _registerRepository;
 
-        public AccountController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
+        public AccountController(ITokenService tokenService, ILoginService loginService, IRegisterRepository registerRepository)
         {
-            _userManager = userManager;
             _tokenService = tokenService;
-            _signInManager = signInManager;
+            _loginService = loginService;
+            _registerRepository = registerRepository;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
         {
-            try
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (await _registerRepository.IsUserNameTakenAsync(registerDto.UserName))
+                return BadRequest("Username is already taken");
+
+            if (await _registerRepository.IsEmailTakenAsync(registerDto.EmailAddress))
+                return BadRequest("Email is already in use");
+
+            var user = new User
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                UserName = registerDto.UserName,
+                Email = registerDto.EmailAddress
+            };
 
-                var user = new User
-                {
-                    UserName = registerDto.UserName,
-                    Email = registerDto.EmailAddress
-                };
-                Console.WriteLine(registerDto.UserName);
-                var createUser = await _userManager.CreateAsync(user, registerDto.Password);
-                if (!createUser.Succeeded)
-                    return StatusCode(500, createUser.Errors);
+            var createUserResult = await _registerRepository.CreateUserAsync(user, registerDto.Password);
+            if (!createUserResult.Succeeded)
+                return StatusCode(500, createUserResult.Errors);
 
-                var roleResult = await _userManager.AddToRoleAsync(user, "User");
-                if (!roleResult.Succeeded)
-                    return StatusCode(500, roleResult.Errors);
+            var assignRoleResult = await _registerRepository.AssignRoleToUserAsync(user, "User");
+            if (!assignRoleResult.Succeeded)
+                return StatusCode(500, assignRoleResult.Errors);
 
-                return Ok(new NewUserDTO
-                {
-                    UserName = user.UserName,
-                    Email = user.Email,
-                });
-
-            }
-            catch (Exception e)
+            return Ok(new
             {
-                return StatusCode(500, e.Message);
-            }
+                UserName = user.UserName,
+                Email = user.Email
+            });
         }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
-            try
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _loginService.FindUserAsync(loginDto.UserName);
+            if (user == null)
+                return Unauthorized("Invalid username");
+
+            var isPasswordValid = await _loginService.ValidateUserPasswordAsync(user, loginDto.Password);
+            if (!isPasswordValid)
+                return Unauthorized("Invalid password");
+
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            var newAccessToken = _tokenService.CreateToken(user);
+
+            await _loginService.UpdateUserWithRefreshTokenAsync(user, refreshToken, DateTime.Now.AddMinutes(10));
+
+            Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                HttpOnly = true,
+                Expires = DateTime.Now.AddDays(1),
+                Secure = true,
+                SameSite = SameSiteMode.Strict
+            });
 
-                var user = await _userManager.FindByNameAsync(loginDto.UserName);
-                if (user == null)
-                    return Unauthorized("Invalid username");
-
-                var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-
-                if (!result.Succeeded)
-                {
-                    return Unauthorized("Invalid password");
-                }
-                var refreshToken = _tokenService.GenerateRefreshToken();
-
-                var newAccessToken = _tokenService.CreateToken(user);
-
-                user.RefreshToken = refreshToken;
-                user.RefreshTokenExpiry = DateTime.Now.AddMinutes(10);
-                await _userManager.UpdateAsync(user);
-
-                Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Expires = DateTime.Now.AddDays(1),
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict
-                });
-
-                return Ok(new LoginResponse
-                {
-                    IsLogged=true,
-                    JwtToken = newAccessToken,
-                    RefreshToken = refreshToken
-
-                });
-            }
-            catch (Exception e)
+            return Ok(new LoginResponse
             {
-                return StatusCode(500, e.Message);
-            }
+                IsLogged = true,
+                JwtToken = newAccessToken,
+                RefreshToken = refreshToken
+            });
         }
+
         [Authorize]
         [HttpPost]
         [Route("RefreshToken")]
-        public async Task<IActionResult> GenereateNewRefreshToken(RefreshTokenDTO refreshTokenDTO) 
+        public async Task<IActionResult> GenereateNewRefreshToken(RefreshTokenDTO refreshTokenDTO)
         {
             var loginresult = await _tokenService.GenerateNewRefreshToken(refreshTokenDTO);
             Response.Cookies.Append("RefreshToken", loginresult.RefreshToken, new CookieOptions
@@ -122,91 +106,26 @@ namespace CodingCleanProject.Controllers
                 Secure = true,
                 SameSite = SameSiteMode.Strict
             });
+
             if (loginresult.IsLogged)
-            { 
                 return Ok(loginresult);
-            }
+
             return Unauthorized();
-        }
-
-        [HttpGet("my-claims")]
-        [Authorize]
-        public async Task<IActionResult> GetMyClaims()
-        {
-            try
-            {
-                var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    return Unauthorized("Access token nije pronaden");
-                }
-                var principal = _tokenService.GetTokenPrincipal(accessToken);
-
-                if (principal == null)
-                {
-                    return Unauthorized("Token nije validan");
-                }
-
-                var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-
-                if (user == null)
-                {
-                    return Unauthorized("Korisnik nije pronaden");
-                }
-                var claims = await _userManager.GetClaimsAsync(user);
-                return Ok(new
-                {
-                    UserId = user.Id,
-                    Claims = claims.Select(c => new { c.Type, c.Value })
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500,ex.Message);
-            }
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
+            var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return Unauthorized("Access token nije pronaden, korisnik nije prijasvljen");
+            }
+
             Response.Cookies.Delete("RefreshToken");
             HttpContext.SignOutAsync();
 
             return Ok("Logged out successfully");
         }
-        [Authorize]
-        [HttpGet("getUserDetails")]
-        public async Task<IActionResult> GetUserDetails()
-        {
-            try
-            {
-                var userName = User.Identity?.Name;
-
-                if (string.IsNullOrEmpty(userName))
-                    return Unauthorized("User is not logged in");
-
-                var user = await _userManager.FindByNameAsync(userName);
-
-                if (user == null)
-                    return NotFound("User not found");
-
-                var roles = await _userManager.GetRolesAsync(user);
-                var claims = await _userManager.GetClaimsAsync(user);
-
-                return Ok(new
-                {
-                    user.UserName,
-                    user.Email,
-                    Roles = roles,
-                    Claims = claims.Select(c => new { c.Type, c.Value })
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-
     }
 }

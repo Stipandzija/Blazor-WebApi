@@ -25,7 +25,7 @@ namespace Client.Services
 
                 if (string.IsNullOrEmpty(token))
                 {
-                    Console.WriteLine("Token nije pronađen.");
+                    Console.WriteLine("Token nije pronađen");
                     return null;
                 }
 
