@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CodingCleanProject.Interfaces;
-using CodingCleanProject.Dtos.Account;
+using Shared.Dtos.Account;
 
 namespace CodingCleanProject.Repository
 {
@@ -24,8 +24,7 @@ namespace CodingCleanProject.Repository
 
         public async Task<bool> ValidateUserPasswordAsync(User user, string password)
         {
-            var result = await _userManager.CheckPasswordAsync(user, password);
-            return result;
+            return await _userManager.CheckPasswordAsync(user, password);
         }
 
         public async Task UpdateUserWithRefreshTokenAsync(User user, string refreshToken, DateTime expiry)

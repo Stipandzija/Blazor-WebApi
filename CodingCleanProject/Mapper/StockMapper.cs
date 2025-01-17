@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using CodingCleanProject.Dtos.Stock;
+using Shared.Dtos.Stock;
 using CodingCleanProject.Models;
 using Microsoft.Identity.Client;
 

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CodingCleanProject.Dtos.Comment
+namespace Shared.Dtos.Comment
 {
     public class UpdateCommentDTO
     {

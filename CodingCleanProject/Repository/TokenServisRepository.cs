@@ -1,6 +1,6 @@
 ﻿using CodingCleanProject.Data;
-using CodingCleanProject.Dtos.Account;
-using CodingCleanProject.Dtos.RefreshToken;
+using Shared.Dtos.Account;
+using Shared.Dtos.RefreshToken;
 using CodingCleanProject.Interfaces;
 using CodingCleanProject.Models;
 using Microsoft.AspNetCore.Identity;
@@ -79,7 +79,7 @@ namespace CodingCleanProject.Repository
             }
             response.IsLogged = true;
             response.JwtToken = GenerateJwtToken(user.UserName);
-            response.RefreshToken = GenerateRefreshToken();
+            response.SetRefreshToken(GenerateRefreshToken());
 
             user.RefreshToken = response.RefreshToken;
             user.RefreshTokenExpiry = DateTime.Now.AddMinutes(10);

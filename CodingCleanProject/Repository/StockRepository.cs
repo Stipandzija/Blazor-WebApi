@@ -2,7 +2,7 @@
 using CodingCleanProject.Models;
 using CodingCleanProject.Data;
 using Microsoft.EntityFrameworkCore;
-using CodingCleanProject.Dtos.Stock;
+using Shared.Dtos.Stock;
 using CodingCleanProject.Helpers;
 
 namespace CodingCleanProject.Repository

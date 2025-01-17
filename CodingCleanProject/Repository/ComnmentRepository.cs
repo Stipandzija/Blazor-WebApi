@@ -1,5 +1,5 @@
 ﻿using CodingCleanProject.Data;
-using CodingCleanProject.Dtos.Comment;
+using Shared.Dtos.Comment;
 using CodingCleanProject.Interfaces;
 using CodingCleanProject.Models;
 using Microsoft.EntityFrameworkCore;

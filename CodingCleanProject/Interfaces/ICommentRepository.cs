@@ -1,6 +1,5 @@
-﻿using CodingCleanProject.Dtos.Comment;
+﻿using Shared.Dtos.Comment;
 using CodingCleanProject.Models;
-using Microsoft.Data.SqlClient.DataClassification;
 
 namespace CodingCleanProject.Interfaces
 {

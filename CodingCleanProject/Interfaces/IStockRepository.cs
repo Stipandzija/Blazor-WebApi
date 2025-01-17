@@ -1,6 +1,5 @@
 ﻿using CodingCleanProject.Models;
-using Microsoft.EntityFrameworkCore.Update.Internal;
-using CodingCleanProject.Dtos.Stock;
+using Shared.Dtos.Stock;
 using CodingCleanProject.Helpers;
 namespace CodingCleanProject.Interfaces
 {

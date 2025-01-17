@@ -1,11 +1,11 @@
 ﻿using CodingCleanProject.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using CodingCleanProject.Dtos.Account;
+using Shared.Dtos.Account;
 using Microsoft.AspNetCore.Authorization;
 using CodingCleanProject.Interfaces;
 using System.Security.Claims;
-using CodingCleanProject.Dtos.RefreshToken;
+using Shared.Dtos.RefreshToken;
 using Microsoft.AspNetCore.Authentication;
 
 namespace CodingCleanProject.Controllers
@@ -26,11 +26,9 @@ namespace CodingCleanProject.Controllers
         }
 
         [HttpPost("register")]
+        [ServiceFilter(typeof(ModelValidationAttribute))]
         public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             if (await _registerRepository.IsUserNameTakenAsync(registerDto.UserName))
                 return BadRequest("Username is already taken");
 
@@ -59,11 +57,9 @@ namespace CodingCleanProject.Controllers
         }
 
         [HttpPost("login")]
+        [ServiceFilter(typeof(ModelValidationAttribute))]
         public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var user = await _loginService.FindUserAsync(loginDto.UserName);
             if (user == null)
                 return Unauthorized("Invalid username");
@@ -84,19 +80,19 @@ namespace CodingCleanProject.Controllers
                 Secure = true,
                 SameSite = SameSiteMode.Strict
             });
-
-            return Ok(new LoginResponse
+            var loginResponse = new LoginResponse
             {
                 IsLogged = true,
-                JwtToken = newAccessToken,
-                RefreshToken = refreshToken
-            });
+                JwtToken = newAccessToken
+            };
+            loginResponse.SetRefreshToken(refreshToken);
+            return Ok(loginResponse);
         }
 
         [Authorize]
         [HttpPost]
         [Route("RefreshToken")]
-        public async Task<IActionResult> GenereateNewRefreshToken(RefreshTokenDTO refreshTokenDTO)
+        public async Task<IActionResult> GenereateNewRefreshToken([FromBody] RefreshTokenDTO refreshTokenDTO)
         {
             var loginresult = await _tokenService.GenerateNewRefreshToken(refreshTokenDTO);
             Response.Cookies.Append("RefreshToken", loginresult.RefreshToken, new CookieOptions
@@ -119,7 +115,7 @@ namespace CodingCleanProject.Controllers
             var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
             if (string.IsNullOrEmpty(accessToken))
             {
-                return Unauthorized("Access token nije pronaden, korisnik nije prijasvljen");
+                return Unauthorized("Access token is missing, user not logged in");
             }
 
             Response.Cookies.Delete("RefreshToken");

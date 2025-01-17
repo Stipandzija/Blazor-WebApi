@@ -1,4 +1,4 @@
-﻿namespace CodingCleanProject.Dtos.Account
+﻿namespace Shared.Dtos.Account
 {
     public class NewUserDTO
     {

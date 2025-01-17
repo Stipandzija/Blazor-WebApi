@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodingCleanProject", "Codin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{D4077A56-57E7-4F7C-B0CA-0E0CA7DEBEB1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoggerService", "LoggerService\LoggerService.csproj", "{5B0C418D-1704-48A1-8F7C-C3515A27A6C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{B7B972BB-46D9-413D-B904-573B479E5091}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{D4077A56-57E7-4F7C-B0CA-0E0CA7DEBEB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4077A56-57E7-4F7C-B0CA-0E0CA7DEBEB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4077A56-57E7-4F7C-B0CA-0E0CA7DEBEB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B0C418D-1704-48A1-8F7C-C3515A27A6C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B0C418D-1704-48A1-8F7C-C3515A27A6C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B0C418D-1704-48A1-8F7C-C3515A27A6C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B0C418D-1704-48A1-8F7C-C3515A27A6C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7B972BB-46D9-413D-B904-573B479E5091}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7B972BB-46D9-413D-B904-573B479E5091}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7B972BB-46D9-413D-B904-573B479E5091}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7B972BB-46D9-413D-B904-573B479E5091}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

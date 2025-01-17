@@ -1,4 +1,4 @@
-﻿using CodingCleanProject.Dtos.Comment;
+﻿using Shared.Dtos.Comment;
 using CodingCleanProject.Helpers;
 using CodingCleanProject.Interfaces;
 using CodingCleanProject.Mapper;

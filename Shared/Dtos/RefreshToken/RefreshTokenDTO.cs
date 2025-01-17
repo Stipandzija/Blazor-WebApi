@@ -1,4 +1,4 @@
-﻿namespace CodingCleanProject.Dtos.RefreshToken
+﻿namespace Shared.Dtos.RefreshToken
 {
     public class RefreshTokenDTO
     {

@@ -4,9 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using CodingCleanProject.Mapper;
 using Microsoft.EntityFrameworkCore;
 using CodingCleanProject.Interfaces;
-using CodingCleanProject.Dtos.Stock;
+using Shared.Dtos.Stock;
 using CodingCleanProject.Helpers;
 using Microsoft.AspNetCore.Authorization;
+using Shared.Dtos.Stock;
 
 namespace CodingCleanProject.Controllers
 {

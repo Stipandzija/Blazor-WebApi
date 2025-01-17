@@ -1,5 +1,4 @@
-﻿using CodingCleanProject.Dtos.Account;
-using CodingCleanProject.Models;
+﻿using CodingCleanProject.Models;
 
 namespace CodingCleanProject.Interfaces
 {

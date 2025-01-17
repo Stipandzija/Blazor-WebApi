@@ -1,7 +1,6 @@
-﻿using CodingCleanProject.Dtos.Account;
-using CodingCleanProject.Dtos.RefreshToken;
+﻿using Shared.Dtos.Account;
+using Shared.Dtos.RefreshToken;
 using CodingCleanProject.Models;
-using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CodingCleanProject.Interfaces

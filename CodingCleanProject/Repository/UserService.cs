@@ -1,10 +1,11 @@
-﻿using CodingCleanProject.Models;
+﻿using CodingCleanProject.Interfaces;
+using CodingCleanProject.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace CodingCleanProject.Repository
 {
-    public class UserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly UserManager<User> _userManager;
         public UserRepository(UserManager<User> userManager)
