@@ -1,13 +1,20 @@
-﻿using System.Runtime.CompilerServices;
-using Shared.Dtos.Stock;
+﻿using CodingCleanProject.Dtos.Comment;
+using CodingCleanProject.Dtos.Stock;
 using CodingCleanProject.Models;
-using Microsoft.Identity.Client;
+using System.Xml.Linq;
 
 namespace CodingCleanProject.Mapper
 {
-    public static class StockMapper
+    public class StockMapper : IStockMapper
     {
-        public static StockDto toStockDto(this Stock stockModel)
+        private readonly ICommentMapper _commentMapper;
+
+        public StockMapper(ICommentMapper commentMapper)
+        {
+            _commentMapper = commentMapper;
+        }
+
+        public StockDto ToStockDto(Stock stockModel)
         {
             return new StockDto
             {
@@ -16,10 +23,12 @@ namespace CodingCleanProject.Mapper
                 Purchase = stockModel.Purchase,
                 LastDiv = stockModel.LastDiv,
                 Industry = stockModel.Industry,
-                Comments = stockModel.Comments.Select(x => x.ToCommentDto()).ToList()
+                Comments = stockModel.Comments.Select(comment => _commentMapper.ToCommentDto(comment)).ToList()
+
             };
         }
-        public static Stock postStockDTO(this CreateStockDTO stockModel)
+
+        public Stock FromCreateStockDto(CreateStockDTO stockModel)
         {
             return new Stock
             {
@@ -30,6 +39,5 @@ namespace CodingCleanProject.Mapper
                 Industry = stockModel.Industry
             };
         }
-
     }
 }

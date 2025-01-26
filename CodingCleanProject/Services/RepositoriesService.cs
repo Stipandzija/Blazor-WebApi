@@ -12,6 +12,7 @@ namespace CodingCleanProject.Services
             services.AddScoped<IRegisterRepository, RegisterRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ICommentRepository, ComnmentRepository>();
+            services.AddScoped<IPortfolioRepository, PortfolioRepository>();
             services.AddHttpContextAccessor();
 
         }

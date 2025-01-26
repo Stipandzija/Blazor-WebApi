@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using CodingCleanProject.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using CodingCleanProject.Interfaces;
-using Shared.Dtos.Account;
 
 namespace CodingCleanProject.Repository
 {

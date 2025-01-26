@@ -1,13 +1,8 @@
-﻿using CodingCleanProject.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using CodingCleanProject.Mapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using CodingCleanProject.Interfaces;
-using Shared.Dtos.Stock;
 using CodingCleanProject.Helpers;
+using CodingCleanProject.Dtos.Stock;
 using Microsoft.AspNetCore.Authorization;
-using Shared.Dtos.Stock;
 
 namespace CodingCleanProject.Controllers
 {
@@ -15,84 +10,100 @@ namespace CodingCleanProject.Controllers
     [ApiController]
     public class AppStockController : Controller
     {
-
         private readonly IStockRepository _stockRepository;
-        private readonly QueryObject _queryObject;
-        public AppStockController(IStockRepository stockRepository,QueryObject queryObject)
+        private readonly IMapper _mapper;
+
+        public AppStockController(IStockRepository stockRepository, IMapper mapper)
         {
             _stockRepository = stockRepository;
-            _queryObject = queryObject;
-        }
-        [HttpGet("GetAll")]
-        [Authorize]
-        public async Task<IActionResult> GetAllStocks()
-        {
-            var stocksModel = await _stockRepository.GetAllAsync();
-            var stocksDto = stocksModel.Select(StockMapper.toStockDto);
-            if (stocksDto.IsNullOrEmpty())
-                return NotFound();
-            return Ok(stocksDto);
+            _mapper = mapper;
         }
 
-        [HttpGet("GetWithQuery")]
-        public async Task<IActionResult> GetStocks([FromQuery] QueryObject queryObject)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        private bool IsValidModel() => ModelState.IsValid;
 
-            var stocksModel = await _stockRepository.GetAsync(queryObject);
-            var stocksDto = stocksModel.Select(StockMapper.toStockDto);
-            if(stocksDto.IsNullOrEmpty())
-                return NotFound();
-            return Ok(stocksDto);
-        }
-        [HttpGet]
-        [Route("{Id:int}")]
-        public async Task<IActionResult> GetStockByID([FromRoute] int Id)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var stocks = await _stockRepository.GetByIdAsync(Id);
-            if (stocks == null)
-                return NotFound();
-            return Ok(stocks.toStockDto());
-
-        }
         [HttpPost]
         public async Task<IActionResult> CreateStock([FromBody] CreateStockDTO createStockDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var StockModel = createStockDTO.postStockDTO();
-            var flag = _stockRepository.CreateStockAsync(StockModel);
-            /***return GetStockByID(StockModel.Id);***/ // vraca 200 ok
-            return CreatedAtAction(nameof(GetStockByID), new { id = StockModel.Id }, StockModel.toStockDto()); // vraca 201 - znaci created
+            var stockModel = _mapper.StockMapper.FromCreateStockDto(createStockDTO);
+            var created = await _stockRepository.CreateStockAsync(stockModel);
+
+            if (created==null)
+                return StatusCode(500, "Error occurred while creating the stock");
+
+            return CreatedAtAction(nameof(GetStockByID), new { id = stockModel.Id }, _mapper.StockMapper.ToStockDto(stockModel));
         }
-        [HttpPut]
-        [Route("{Id:int}")]
-        public async Task<IActionResult> UpdateStock([FromRoute] int Id, [FromBody] UpdateStockDto updateStockDto) 
+
+        [HttpGet("GetAll")]
+        [Authorize]
+        public async Task<IActionResult> GetAllStocks()
         {
-            if (!ModelState.IsValid)
+            if (!IsValidModel())
                 return BadRequest(ModelState);
 
-            var stockModel = await _stockRepository.UpdateStockAsync(Id,updateStockDto);
+            var stocksModel = await _stockRepository.GetAllAsync();
+            var stocksDto = stocksModel.Select(stock => _mapper.StockMapper.ToStockDto(stock)).ToList();
+
+            if (!stocksDto.Any())
+                return NotFound();
+
+            return Ok(stocksDto);
+        }
+
+        [HttpGet("GetWithQuery")]
+        public async Task<IActionResult> GetStocks([FromQuery] QueryObject queryObject)
+        {
+            if (!IsValidModel())
+                return BadRequest(ModelState);
+
+            var stocksModel = await _stockRepository.GetAsync(queryObject);
+            var stocksDto = stocksModel.Select(stock => _mapper.StockMapper.ToStockDto(stock)).ToList();
+
+            if (!stocksDto.Any())
+                return NotFound();
+
+            return Ok(stocksDto);
+        }
+
+        [HttpGet("{Id:int}")]
+        public async Task<IActionResult> GetStockByID([FromRoute] int Id)
+        {
+            if (!IsValidModel())
+                return BadRequest(ModelState);
+
+            var stock = await _stockRepository.GetByIdAsync(Id);
+            if (stock == null)
+                return NotFound();
+
+            return Ok(_mapper.StockMapper.ToStockDto(stock));
+        }
+
+
+        [HttpPut("{Id:int}")]
+        public async Task<IActionResult> UpdateStock([FromRoute] int Id, [FromBody] UpdateStockDto updateStockDto)
+        {
+            if (!IsValidModel())
+                return BadRequest(ModelState);
+
+            var stockModel = await _stockRepository.UpdateStockAsync(Id, updateStockDto);
             if (stockModel == null)
                 return NotFound();
 
-            return Ok(stockModel.toStockDto());
+            return Ok(_mapper.StockMapper.ToStockDto(stockModel));
         }
-        [HttpDelete]
-        [Route("{Id:int}")]
+
+        [HttpDelete("{Id:int}")]
         public async Task<IActionResult> DeleteStock([FromRoute] int Id)
         {
-            if (!ModelState.IsValid)
+            if (!IsValidModel())
                 return BadRequest(ModelState);
 
             var stockModel = await _stockRepository.DeleteStockAsync(Id);
-            if(stockModel == null)
+            if (stockModel == null)
                 return NotFound();
+
             return NoContent();
         }
     }

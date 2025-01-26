@@ -1,4 +1,4 @@
-﻿using Shared.Dtos.Comment;
+﻿using CodingCleanProject.Dtos.Comment;
 
 namespace CodingCleanProject.Dtos.Stock
 {
@@ -12,7 +12,7 @@ namespace CodingCleanProject.Dtos.Stock
         public string? Industry { get; set; }
         public long MarketCap { get; set; }
 
-        public ICollection<CommentDto> Comments { get; set; }
+        public List<CommentDto> Comments { get; set; }
         //public long MarketCap { get; set; }
     }
 }

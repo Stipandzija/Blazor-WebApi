@@ -1,12 +1,10 @@
 ﻿using CodingCleanProject.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Dtos.Account;
 using Microsoft.AspNetCore.Authorization;
 using CodingCleanProject.Interfaces;
-using System.Security.Claims;
-using Shared.Dtos.RefreshToken;
 using Microsoft.AspNetCore.Authentication;
+using CodingCleanProject.Dtos.Account;
+using CodingCleanProject.Dtos.RefreshToken;
 
 namespace CodingCleanProject.Controllers
 {

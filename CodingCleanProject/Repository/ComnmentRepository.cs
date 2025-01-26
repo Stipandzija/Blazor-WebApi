@@ -1,5 +1,5 @@
 ﻿using CodingCleanProject.Data;
-using Shared.Dtos.Comment;
+using CodingCleanProject.Dtos.Comment;
 using CodingCleanProject.Interfaces;
 using CodingCleanProject.Models;
 using Microsoft.EntityFrameworkCore;
@@ -36,15 +36,15 @@ namespace CodingCleanProject.Repository
 
         public async Task<List<Comment>> GetAllCommentAsync()
         {
-            return await _context.comments.ToListAsync();
+            return await _context.comments.Include(x=>x.AppUser).ToListAsync();
         }
 
         public async Task<Comment?> GetCommentByIdAsync(int id)
         {
-            return await _context.comments.FirstOrDefaultAsync(c => c.Id == id);
+            return await _context.comments.Include(x => x.AppUser).FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public async Task<Comment?> UpdateAsync(int Id, UpdateCommentDTO comment)
+        public async Task<Comment?> UpdateAsync(UpdateCommentDTO comment,int Id)
         {
             var commentModel = await _context.comments.FirstOrDefaultAsync(X => X.Id == Id);
             if (commentModel != null)

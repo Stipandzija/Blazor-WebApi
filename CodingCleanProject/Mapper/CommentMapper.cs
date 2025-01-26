@@ -1,22 +1,24 @@
-﻿using Shared.Dtos.Comment;
+﻿using CodingCleanProject.Dtos.Comment;
 using CodingCleanProject.Models;
-using CodingCleanProject.Repository;
 
 namespace CodingCleanProject.Mapper
 {
-    public static class CommentMapper
+    public class CommentMapper : ICommentMapper
     {
-        public static CommentDto ToCommentDto(this Comment comment)
+        public CommentDto ToCommentDto(Comment comment)
         {
             return new CommentDto
             {
+                Id = comment.Id,
                 Title = comment.Title,
                 Content = comment.Content,
                 CreateOn = comment.CreateOn,
                 StockId = comment.StockId,
+                CreatedBy = comment.AppUser.UserName
+
             };
         }
-        public static Comment CreateCommentToDto(this CreateCommentDTO comment,int Id)
+        public Comment FromCreateDto(CreateCommentDTO comment,int Id)
         {
             return new Comment
             {

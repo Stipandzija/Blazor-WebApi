@@ -14,10 +14,21 @@ namespace CodingCleanProject.Data
         public DbSet<Stock> stocks { get; set; }
         public DbSet<Comment> comments { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<UserStock> Portofolios { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
 
             base.OnModelCreating(builder);
+            builder.Entity<UserStock>(x => x.HasKey(p => new { p.UserId, p.StockId }));//strani kljuc
+            builder.Entity<UserStock>()
+                .HasOne(x => x.User)
+                .WithMany(x => x.userStocks)
+                .HasForeignKey(p => p.UserId);
+            builder.Entity<UserStock>()
+                .HasOne(x => x.Stock)
+                .WithMany(x => x.userStocks)
+                .HasForeignKey(p => p.StockId);
+
             List<IdentityRole> roles = new List<IdentityRole>
             {
                 new IdentityRole

@@ -2,8 +2,8 @@
 using CodingCleanProject.Models;
 using CodingCleanProject.Data;
 using Microsoft.EntityFrameworkCore;
-using Shared.Dtos.Stock;
 using CodingCleanProject.Helpers;
+using CodingCleanProject.Dtos.Stock;
 
 namespace CodingCleanProject.Repository
 {
@@ -43,7 +43,7 @@ namespace CodingCleanProject.Repository
 
         public async Task<List<Stock>> GetAllAsync()
         {
-            return await _context.stocks.Include(c=>c.Comments).ToListAsync();
+            return await _context.stocks.Include(c=>c.Comments).ThenInclude(x=>x.AppUser).ToListAsync();
         }
 
         public async Task<List<Stock>> GetAsync(QueryObject queryObject)
@@ -82,6 +82,11 @@ namespace CodingCleanProject.Repository
                 return stockmodel;
             }
             return null;
+        }
+
+        public async Task<Stock?> GetBySymbolAsync(string symbol)
+        {
+            return await _context.stocks.FirstOrDefaultAsync(x => x.Symbol == symbol);
         }
 
         public async Task<Stock?> UpdateStockAsync(int id , UpdateStockDto updateStockDto)

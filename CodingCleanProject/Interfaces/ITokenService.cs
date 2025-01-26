@@ -1,5 +1,5 @@
-﻿using Shared.Dtos.Account;
-using Shared.Dtos.RefreshToken;
+﻿using CodingCleanProject.Dtos.Account;
+using CodingCleanProject.Dtos.RefreshToken;
 using CodingCleanProject.Models;
 using System.Security.Claims;
 

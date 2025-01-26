@@ -4,6 +4,7 @@ using CodingCleanProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CodingCleanProject.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250124224108_DodaUserStock")]
+    partial class DodaUserStock
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,10 +32,6 @@ namespace CodingCleanProject.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AppUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -52,8 +51,6 @@ namespace CodingCleanProject.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AppUserId");
 
                     b.HasIndex("StockId");
 
@@ -209,13 +206,13 @@ namespace CodingCleanProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ffeae4da-5f4d-43dc-8c3b-72d5c65e440d",
+                            Id = "60d200d7-1a70-4c50-b7e7-9c35395e90fb",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "5b380561-f1b9-44d0-b5d5-18ee19df35ed",
+                            Id = "ce9e90b7-2d26-484d-a1ae-91dc984a3931",
                             Name = "User",
                             NormalizedName = "USER"
                         });
@@ -329,17 +326,9 @@ namespace CodingCleanProject.Migrations
 
             modelBuilder.Entity("CodingCleanProject.Models.Comment", b =>
                 {
-                    b.HasOne("CodingCleanProject.Models.User", "AppUser")
-                        .WithMany()
-                        .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("CodingCleanProject.Models.Stock", "Stock")
                         .WithMany("Comments")
                         .HasForeignKey("StockId");
-
-                    b.Navigation("AppUser");
 
                     b.Navigation("Stock");
                 });

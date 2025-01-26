@@ -1,5 +1,8 @@
-﻿namespace CodingCleanProject.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace CodingCleanProject.Models
 {
+    [Table("Stocks")]
     public class Stock
     {
         public int Id { get; set; }
@@ -11,6 +14,7 @@
 
         public long MarketCap { get; set; }
 
-        public ICollection<Comment> Comments { get; set; }
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        public List<UserStock> userStocks { get; set; } = new List<UserStock>();
     }
 }

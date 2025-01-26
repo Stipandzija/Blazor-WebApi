@@ -1,8 +1,10 @@
-﻿using Shared.Dtos.Comment;
-using CodingCleanProject.Helpers;
-using CodingCleanProject.Interfaces;
+﻿using CodingCleanProject.Interfaces;
 using CodingCleanProject.Mapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
+using CodingCleanProject.Models;
+using CodingCleanProject.Extensions.ClaimsExtenions;
+using CodingCleanProject.Dtos.Comment;
 
 namespace CodingCleanProject.Controllers
 {
@@ -12,10 +14,15 @@ namespace CodingCleanProject.Controllers
     {
         private readonly ICommentRepository _commentRepository;
         private readonly IStockRepository _stockRepository;
-        public AppCommentController(ICommentRepository commentRepository, IStockRepository stockRepository)
+        private readonly UserManager<User> _userManager;
+        private readonly IMapper _mapper;
+
+        public AppCommentController(UserManager<User> userManager, ICommentRepository commentRepository, IStockRepository stockRepository, IMapper mapper)
         {
             _commentRepository = commentRepository;
             _stockRepository = stockRepository;
+            _userManager = userManager;
+            _mapper = mapper;
         }
         [HttpGet]
         public async Task<IActionResult> GetAllComments() {
@@ -24,7 +31,8 @@ namespace CodingCleanProject.Controllers
                 return BadRequest(ModelState);
 
             var CommentModel = await _commentRepository.GetAllCommentAsync();
-            return Ok(CommentModel.Select(CommentMapper.ToCommentDto));
+            var commentDtos = CommentModel.Select(comment => _mapper.CommentMapper.ToCommentDto(comment));
+            return Ok(commentDtos);
         }
         [HttpGet]
         [Route("{Id:int}")]
@@ -33,10 +41,9 @@ namespace CodingCleanProject.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var CommentModel = await _commentRepository.GetCommentByIdAsync(Id);
-            if (CommentModel == null)
-                return NotFound();
-            return Ok(CommentModel.ToCommentDto());
+            var commentModels = await _commentRepository.GetAllCommentAsync();
+            var commentDtos = commentModels.Select(comment => _mapper.CommentMapper.ToCommentDto(comment)); // Using ICommentMapper
+            return Ok(commentDtos);
         }
         [HttpPost]
         [Route("{Id:int}")]
@@ -47,9 +54,18 @@ namespace CodingCleanProject.Controllers
 
             if (await _stockRepository.ExistStock(Id) == false)
                 return BadRequest("Stock ne postoji");
-            var CommentModel = commentDto.CreateCommentToDto(Id);
-            await _commentRepository.CreateCommentAsync(CommentModel);
-            return CreatedAtAction(nameof(GetCommentById), new { id = CommentModel.Id }, CommentModel.ToCommentDto());
+
+            var UserName = User.GetUsername();
+            var appUser = await _userManager.FindByNameAsync(UserName);
+
+            var commentModel = _mapper.CommentMapper.FromCreateDto(commentDto,Id);
+            commentModel.AppUserId = appUser.Id;
+            commentModel.StockId = Id;
+
+            await _commentRepository.CreateCommentAsync(commentModel);
+
+            var commentDtoResult = _mapper.CommentMapper.ToCommentDto(commentModel);
+            return CreatedAtAction(nameof(GetCommentById), new { id = commentModel.Id }, commentDtoResult);
         }
         [HttpPut]
         [Route("{Id:int}")]
@@ -58,9 +74,11 @@ namespace CodingCleanProject.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var CommentModel = await _commentRepository.UpdateAsync(Id, UpdateCommentDTO);
+            var CommentModel = await _commentRepository.UpdateAsync(UpdateCommentDTO,Id);
             if (CommentModel == null) return NotFound();
-            return Ok(CommentModel.ToCommentDto());
+
+            var commentDto = _mapper.CommentMapper.ToCommentDto(CommentModel);
+            return Ok(commentDto);
         }
         [HttpDelete]
         [Route("{Id:int}")]
