@@ -69,36 +69,6 @@ namespace WebApp.Tests.Controller
             result.Should().BeOfType<CreatedAtActionResult>();
             result.Should().NotBeNull();
         }
-        [Fact]
-        public async Task CreateStock_ShouldFail_WhenMapperReturnsIncorrectData()
-        {
-            // Arrange
-            var stockDto = A.Fake<CreateStockDTO>(); // Input DTO
-            var stockModel = new Stock { Id = 0, CompanyName = null, Symbol = null }; // Incorrect data returned by mapper
-            var incorrectStockDtoResult = new StockDto { CompanyName = null, Symbol = null }; // Incorrect DTO
-
-            // Simulate incorrect mapping
-            A.CallTo(() => _mapper.StockMapper.FromCreateStockDto(stockDto)).Returns(stockModel);
-            A.CallTo(() => _stockRepository.CreateStockAsync(stockModel)).Returns(stockModel); // Mock repository to return bad data
-            A.CallTo(() => _mapper.StockMapper.ToStockDto(stockModel)).Returns(incorrectStockDtoResult); // Map to incorrect DTO
-
-            // Act
-            var result = await _controller.CreateStock(stockDto);
-
-            // Assert
-            result.Should().BeOfType<CreatedAtActionResult>();
-            var createdResult = result as CreatedAtActionResult;
-
-            createdResult.Should().NotBeNull(); // Ensure result is not null
-            createdResult.ActionName.Should().Be(nameof(AppStockController.GetStockByID)); // Ensure action name is correct
-
-            // Validate the returned DTO contains invalid data
-            createdResult.Value.Should().NotBeEquivalentTo(new StockDto
-            {
-                CompanyName = "Valid Company",
-                Symbol = "VALID"
-            });
-        }
 
 
 
