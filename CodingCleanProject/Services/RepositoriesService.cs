@@ -1,4 +1,5 @@
 ﻿using CodingCleanProject.Interfaces;
+using CodingCleanProject.Mapper;
 using CodingCleanProject.Repository;
 
 namespace CodingCleanProject.Services
@@ -14,6 +15,11 @@ namespace CodingCleanProject.Services
             services.AddScoped<ICommentRepository, ComnmentRepository>();
             services.AddScoped<IPortfolioRepository, PortfolioRepository>();
             services.AddHttpContextAccessor();
+            services.AddScoped<ICommentMapper, CommentMapper>();
+            services.AddScoped<IStockMapper, StockMapper>();
+            services.AddScoped<IMapper, Mapperr>();  
+
+
 
         }
     }

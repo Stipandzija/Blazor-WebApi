@@ -5,25 +5,25 @@ using Client;
 using BlazorClient.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Client.Services;
+using Microsoft.JSInterop;
+using Client.Interfaces;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 
-builder.Services.AddScoped(sp =>
+builder.Services.AddScoped(sp => new HttpClient
 {
-    var httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7061/") };
-    return httpClient;
+    BaseAddress = new Uri("http://localhost:5103")//promjenit nakon domene
 });
+
 
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddHttpClient();
-
-// Registrirajte CustomAuthenticationStateProvider kao AuthenticationStateProvider
-
 
 await builder.Build().RunAsync();

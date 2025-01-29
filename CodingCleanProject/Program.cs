@@ -1,38 +1,50 @@
-using CodingCleanProject.Data;
-using CodingCleanProject.Interfaces;
-using CodingCleanProject.Repository;
-using Microsoft.EntityFrameworkCore;
+﻿using CodingCleanProject.Data;
 using CodingCleanProject.Helpers;
 using CodingCleanProject.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using CodingCleanProject.Services;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Antiforgery;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader());
-});
-builder.Services.AddScoped<ModelValidationAttribute>();
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+    options.AddPolicy("Allow", builder =>
+    {
 
+        builder.WithOrigins("http://localhost:5000")
+               .AllowAnyHeader()
+               .AllowAnyMethod()
+               .AllowCredentials();
+    });
+});
+
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+});
+
+builder.Services.AddMvc();
+builder.Services.AddScoped<ModelValidationAttribute>();
+
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+});
+
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
 builder.Services.AddDatabaseService(builder.Configuration);
 
-
 builder.Services.AddRepositories();
-
 builder.Services.AddTransient<QueryObject>();
-
 builder.Services.AddTokenService();
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -41,12 +53,11 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireDigit = true;
-}).AddEntityFrameworkStores<AppDbContext>();
+}).AddEntityFrameworkStores<AppDbContext>(); ;
 
 builder.Services.AddAuthenticationService(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -75,16 +86,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
-builder.Services.AddControllers().AddNewtonsoftJson(options =>
-{
-    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-});
-
-
 var app = builder.Build();
-app.UseMiddleware<CustomExceptionMiddleware>();
-// Configure the HTTP request pipeline.
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -92,26 +96,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
 
-//app.Use(async (context, next) =>
-//{
-//    if (context.Request.Path == "/api/auth/login")
-//    {
-//        var token = "GENERATED-JWT-TOKEN";
-//        context.Response.Cookies.Append("AuthToken", token, new CookieOptions
-//        {
-//            HttpOnly = true,
-//            Secure = true, // mora da ide preko https 
-//            SameSite = SameSiteMode.Strict, // osgurava da se izbjegne Cross-site request forgery
-//            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
-//        });
-//    }
-//    await next();
-//});
+
+app.UseAuthentication();
 app.UseAuthorization();
-app.UseCors("AllowAll");
 
 app.MapControllers();
+
+app.UseCors("Allow");
 
 app.Run();

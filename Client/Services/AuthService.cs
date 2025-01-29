@@ -3,11 +3,14 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.JSInterop;
+using static System.Net.WebRequestMethods;
 
 
 
@@ -29,26 +32,28 @@ namespace BlazorClient.Services
             _jsRuntime = jsRuntime;
             _authenticationStateProvider = customAuthenticationStateProvider;
         }
-        public async Task<bool> LoginAsync(string username, string password)
+        public async Task<bool> LoginAsync(string username, string password, string antiforgeryToken)
         {
-            var request = new { UserName = username, Password = password };
-            var response = await _httpClient.PostAsJsonAsync("api/account/login", request);
+            var loginRequest = new { UserName = username, Password = password };
 
+            //var response = await _httpClient.PostAsJsonAsync("api/account/login", loginRequest);
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:7061/api/account/login");
+            request.Content = JsonContent.Create(loginRequest);
+            if (!string.IsNullOrEmpty(antiforgeryToken))
+            {
+                request.Headers.Add("X-CSRF-TOKEN", antiforgeryToken);
+            }
+            var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 if (result != null)
                 {
                     await SetTokenAsync(result.JwtToken);
-
                     _authenticationStateProvider.MarkUserAsAuthenticated(result.JwtToken);
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", result.JwtToken);
                     return true;
                 }
-            }
-            else
-            {
-                Console.WriteLine($"Login failed: {response.StatusCode}");
             }
 
             return false;
@@ -181,4 +186,19 @@ namespace BlazorClient.Services
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
         public string password { get; set; }
     }
+    public class TokenResponse
+    {
+        public string Token { get; set; }
+    }
+
+    
+        public class LoginDTO
+        {
+            [Required]
+            public string? UserName { get; set; }
+            [Required]
+            public string? Password { get; set; }
+
+        }
+
 }

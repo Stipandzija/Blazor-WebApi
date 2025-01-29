@@ -20,36 +20,24 @@
         </svg>
         <div class="loading-progress-text"></div>
     </div>
-
     <div id="blazor-error-ui">
         An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+
+
 </body>
 
 </html>
 
+
 <script>
-    window.setCookie = function (name, value, days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        var expires = "expires=" + date.toUTCString();
-        document.cookie = name + "=" + value + ";" + expires + ";path=/";
-    };
-
-    window.getCookie = function (name) {
-        var nameEq = name + "=";
-        var ca = document.cookie.split(';');
-        for (var i = 0; i < ca.length; i++) {
-            var c = ca[i].trim();
-            if (c.indexOf(nameEq) === 0) return c.substring(nameEq.length, c.length);
-        }
-        return "";
-    };
-
-    window.deleteCookie = function (name) {
-        document.cookie = name + '=; Max-Age=-99999999;';
-    };
+        function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
 </script>

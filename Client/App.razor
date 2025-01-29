@@ -1,5 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient _httpClient
+@inject IJSRuntime _jsRuntime
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
@@ -13,4 +15,3 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
-

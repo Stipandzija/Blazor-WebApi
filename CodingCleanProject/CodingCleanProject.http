@@ -1,6 +1,18 @@
-@CodingCleanProject_HostAddress = http://localhost:5103
-
-GET {{CodingCleanProject_HostAddress}}/weatherforecast/
+@CodingCleanProject_HostAddress = http://localhost:7061
+@Token = CfDJ8BhyXSCI3ItJsdENCuCszdqVytixNjehcClPViRVe2naosIJS1KbS4T04tnuYC2y_jXrlKUXJkr1DSFERkgDIlUzMsovwT
+GET {{CodingCleanProject_HostAddress}}/csrf
 Accept: application/json
+### GET CSRF Token (ako je potrebno)
+GET https://localhost:7061/api/account/token HTTP/1.1
+Host: localhost:7061
 
-###
+### POST Login Request
+POST https://localhost:7061/api/account/login HTTP/1.1
+Host: localhost:7061
+Content-Type: application/json
+X-CSRF-TOKEN: {{Token}}
+
+{
+    "username": "Pasko",
+    "password": "Paskopasko1!"
+}
