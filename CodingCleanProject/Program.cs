@@ -29,8 +29,12 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
 });
 
-builder.Services.AddMvc();
+//builder.Services.AddMvc();
 builder.Services.AddScoped<ModelValidationAttribute>();
+
+builder.Services.AddMemoryCache(options=> options.SizeLimit=1024);
+
+builder.Services.AddMvc();
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
@@ -88,6 +92,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddLogging();
 builder.Services.AddTransient<CustomExceptionMiddleware>();
+
 var app = builder.Build();
 
 

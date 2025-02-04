@@ -11,15 +11,19 @@ namespace CodingCleanProject.Controllers
     [ApiController]
     public class AppStockController : Controller
     {
-        private const string StockCacheKey = "stocks";
+        private readonly string StockCacheKey = "stocks";
         private readonly IStockRepository _stockRepository;
         private readonly IMapper _mapper;
         private IMemoryCache _cache;
-        public AppStockController(IMemoryCache memoryCache,IStockRepository stockRepository, IMapper mapper)
+        private readonly ILogger<AppStockController> _logger;
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1,1);
+        public AppStockController(ILogger<AppStockController> logger, IMemoryCache memoryCache, IStockRepository stockRepository, IMapper mapper)
+
         {
             _stockRepository = stockRepository;
             _mapper = mapper;
             _cache = memoryCache;
+            _logger = logger;
         }
 
         private bool IsValidModel() => ModelState.IsValid;
@@ -41,21 +45,64 @@ namespace CodingCleanProject.Controllers
 
         [HttpGet("GetAll")]
         [Authorize]
+        //[ServiceFilter(typeof(ModelValidationAttribute))]
         public async Task<IActionResult> GetAllStocks()
         {
-            if (!IsValidModel())
-                return BadRequest(ModelState);
-            if (_cache.TryGetValue(StockCacheKey, out IEnumerable<StockDto>? result))
+            string userId = User.Identity?.Name;
+            string userStockCacheKey = $"{StockCacheKey}_{userId}";
+            if (_cache.TryGetValue(userStockCacheKey, out List<StockDto?>? stocksDto))
             {
-                return Ok(result);
+                _logger.LogInformation("Stock found in casche.");
             }
-            var stocksModel = await _stockRepository.GetAllAsync();
-            var stocksDto = stocksModel.Select(stock => _mapper.StockMapper.ToStockDto(stock)).ToList();
+            else
+            {
+                try
+                {
+                    await _semaphore.WaitAsync();
 
-            if (!stocksDto.Any())
-                return NotFound();
+                    if (_cache.TryGetValue(userStockCacheKey, out stocksDto))
+                    {
+                        _logger.LogInformation("Stock found in casche");
+                    }
+                    else 
+                    {
+                        _logger.LogInformation("Stock not found in cache. Fetching from db");
 
+                        var stocksModel = await _stockRepository.GetAllAsync();
+                        stocksDto = stocksModel.Select(stock => _mapper.StockMapper.ToStockDto(stock)).ToList();
+
+                        if (!stocksDto.Any())
+                            return NotFound();
+                        var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(60))//koliko je aktivna u cachu, problem ako pristupamo cachu nikad nece nestat
+                            .SetAbsoluteExpiration(TimeSpan.FromHours(1))//rjesavamo problem slidingexpiirtion istice nakon 1 sata sswigurno
+                            .SetPriority(CacheItemPriority.Normal)
+                            .SetSize(1);
+                        _cache.Set(userStockCacheKey, stocksDto, cacheEntryOptions);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching stocks");
+                    return StatusCode(500, "Internal server error");
+                }
+                finally 
+                { 
+                    _semaphore.Release(); 
+                }
+
+            }
             return Ok(stocksDto);
+        }
+
+        [HttpPost("ClearCache")]
+        [Authorize]
+        public async Task<IActionResult> ClearCache()
+        {
+            string userId = User.Identity?.Name;
+            string userStockCacheKey = $"{StockCacheKey}_{userId}";
+            _cache.Remove(userStockCacheKey);
+            return Ok();
         }
 
         [HttpGet("GetWithQuery")]

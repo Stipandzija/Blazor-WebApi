@@ -1,4 +1,5 @@
-﻿using CodingCleanProject.Controllers;
+﻿using Castle.Core.Logging;
+using CodingCleanProject.Controllers;
 using CodingCleanProject.Dtos.Stock;
 using CodingCleanProject.Helpers;
 using CodingCleanProject.Interfaces;
@@ -17,15 +18,18 @@ namespace WebApp.Tests.Controller
         private readonly AppStockController _controller;
         private readonly IStockRepository _stockRepository;
         private readonly IMapper _mapper;
-        private IMemoryCache _cache;
+        private readonly IMemoryCache _cache;
+        private Microsoft.Extensions.Logging.ILogger<AppStockController> _logger;
         public StockControllerTests()
         {
             //dependency
             _stockRepository = A.Fake<IStockRepository>();
             _mapper = A.Fake<IMapper>();
             _cache = A.Fake<IMemoryCache>();
-            _controller = new AppStockController(_cache, _stockRepository, _mapper);
+            _logger = A.Fake<Microsoft.Extensions.Logging.ILogger<AppStockController>>();
+            _controller = new AppStockController(_logger, _cache, _stockRepository, _mapper);
         }
+
         [Fact]
         public async void StockControllerTests_GetAllStocks_stocksDto()
         {

@@ -18,6 +18,7 @@ namespace CodingCleanProject.Services
             services.AddScoped<ICommentMapper, CommentMapper>();
             services.AddScoped<IStockMapper, StockMapper>();
             services.AddScoped<IMapper, Mapperr>();
+
             services.AddScoped<IgnoreAntiforgeryTokenForSwagger>();
 
 
