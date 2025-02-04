@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  codingcleanproject:
+    image: ${DOCKER_REGISTRY-}codingcleanproject
+    build:
+      context: .
+      dockerfile: CodingCleanProject\Dockerfile

@@ -1,0 +1,58 @@
+﻿@page "/search"
+
+@using System.Text
+@inject HttpClient Http
+@using Newtonsoft.Json;
+@inject NavigationManager NavigationManager
+
+<EditForm Model="@_search" OnValidSubmit="HandleSearch">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="searchInput">Search Username</label>
+        <InputText id="searchInput" class="form-control" @bind-Value="_search" />
+        <ValidationMessage For="@(() => _search)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(_responseMessage))
+{
+    <div class="alert alert-danger">@_responseMessage</div>
+}
+
+@code {
+    private string _responseMessage;
+    private string _search = string.Empty;
+
+    private async Task HandleSearch()
+    {
+        try
+        {
+            //var token = await AntiForgeryService.GetTokenAsync();
+
+            //var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5103/api/account/search");
+            //request.Headers.Add("X-CSRF-TOKEN", token);
+            // request.Content = new StringContent(JsonConvert.SerializeObject(_search), Encoding.UTF8, "application/json");
+            // request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+            var response = await Http.PostAsJsonAsync("api/account/search", _search);
+            //var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _responseMessage = response.ToString();
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                _responseMessage = "Search failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _responseMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+}

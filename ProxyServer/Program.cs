@@ -52,7 +52,6 @@ app.Use(async (context, next) =>
 
         await response.Content.CopyToAsync(context.Response.Body);
 
-        // Call the next middleware in the pipeline.  Crucially important!
         await next(context);
     }
     catch (Exception ex)

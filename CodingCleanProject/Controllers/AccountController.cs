@@ -29,7 +29,7 @@ namespace CodingCleanProject.Controllers
 
         [HttpPost("register")]
         [ServiceFilter(typeof(ModelValidationAttribute))]
-        [ServiceFilter(typeof(IgnoreAntiforgeryTokenForSwagger))]
+
         public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
         {
             if (await _registerRepository.IsUserNameTakenAsync(registerDto.UserName))
@@ -72,86 +72,53 @@ namespace CodingCleanProject.Controllers
         }
     
         [HttpPost("login")]
-        [ValidateAntiForgeryToken]
+        //ukoliko testiramo swagger moramo onemnogucit antiforgery
         [ServiceFilter(typeof(ModelValidationAttribute))]
         [ServiceFilter(typeof(IgnoreAntiforgeryTokenForSwagger))]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
-        
-
-            var headerToken = HttpContext.Request.Headers["X-CSRF-TOKEN"];
-
-            var cookieToken = HttpContext.Request.Cookies[".AspNetCore.Antiforgery"];
-
-            Console.WriteLine($"Header Token: {headerToken}");
-            Console.WriteLine($"Cookie Token: {cookieToken}");
 
 
-            //try
-            //{
-            //    await _antiForgery.ValidateRequestAsync(this.HttpContext);
-            //}
-            //catch (AntiforgeryValidationException)
-            //{
+            Console.WriteLine("Login started");
+            var user = await _loginService.FindUserAsync(loginDto.UserName);
+            if (user == null)
+            {
+                Console.WriteLine("Invalid username");
+                return Unauthorized("Invalid username");
+            }
 
-            //    var requestHeaders = HttpContext.Request.Headers;
-            //    var requestMethod = HttpContext.Request.Method;
-            //    var requestUrl = HttpContext.Request.Path;
+            var isPasswordValid = await _loginService.ValidateUserPasswordAsync(user, loginDto.Password);
+            if (!isPasswordValid)
+                return Unauthorized("Invalid password");
 
-            //    Console.WriteLine($"Invalid anti-forgery token detected!");
-            //    Console.WriteLine($"Request URL: {requestUrl}");
-            //    Console.WriteLine($"Request Method: {requestMethod}");
-            //    Console.WriteLine("Request Headers:");
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            var newAccessToken = _tokenService.CreateToken(user);
 
-            //    foreach (var header in requestHeaders)
-            //    {
-            //        Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-            //    }
+            await _loginService.UpdateUserWithRefreshTokenAsync(user, refreshToken, DateTime.Now.AddMinutes(10));
 
-            //    return BadRequest("Invalid anti-forgery token");
-            //}
-
-            return Ok(new { Message = "Data submitted securely!" });
-
-
-            //Console.WriteLine("Login started");
-            //var user = await _loginService.FindUserAsync(loginDto.UserName);
-            //if (user == null)
-            //{
-            //    Console.WriteLine("Invalid username");
-            //    return Unauthorized("Invalid username");
-            //}
-
-            //var isPasswordValid = await _loginService.ValidateUserPasswordAsync(user, loginDto.Password);
-            //if (!isPasswordValid)
-            //    return Unauthorized("Invalid password");
-
-            //var refreshToken = _tokenService.GenerateRefreshToken();
-            //var newAccessToken = _tokenService.CreateToken(user);
-
-            //await _loginService.UpdateUserWithRefreshTokenAsync(user, refreshToken, DateTime.Now.AddMinutes(10));
-
-            //Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
-            //{
-            //    HttpOnly = true,
-            //    Expires = DateTime.Now.AddDays(1),
-            //    Secure = true,
-            //    SameSite = SameSiteMode.Strict
-            //});
-            //var loginResponse = new LoginResponse
-            //{
-            //    IsLogged = true,
-            //    JwtToken = newAccessToken
-            //};
-            //loginResponse.SetRefreshToken(refreshToken);
-            //Console.WriteLine("Login finished");
-            //return Ok(loginResponse);
+            Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.Now.AddDays(1),
+                Secure = true,
+                SameSite = SameSiteMode.Strict
+            });
+            var loginResponse = new LoginResponse
+            {
+                IsLogged = true,
+                JwtToken = newAccessToken
+            };
+            loginResponse.SetRefreshToken(refreshToken);
+            Console.WriteLine("Login finished");
+            return Ok(loginResponse);
         }
 
         [Authorize]
         [HttpPost]
         [Route("RefreshToken")]
-        [ServiceFilter(typeof(IgnoreAntiforgeryTokenForSwagger))]
+        [ServiceFilter(typeof(ModelValidationAttribute))]
+
         public async Task<IActionResult> GenereateNewRefreshToken([FromBody] RefreshTokenDTO refreshTokenDTO)
         {
             var loginresult = await _tokenService.GenerateNewRefreshToken(refreshTokenDTO);
@@ -168,9 +135,9 @@ namespace CodingCleanProject.Controllers
 
             return Unauthorized();
         }
-
+        [Authorize]
         [HttpPost("logout")]
-        [ServiceFilter(typeof(IgnoreAntiforgeryTokenForSwagger))]
+        [ServiceFilter(typeof(ModelValidationAttribute))]
         public async Task<IActionResult> Logout()
         {
             var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
@@ -180,12 +147,12 @@ namespace CodingCleanProject.Controllers
             }
 
             Response.Cookies.Delete("RefreshToken");
-            HttpContext.SignOutAsync();
+            await HttpContext.SignOutAsync();
 
             return Ok("Logged out successfully");
         }
-
         [HttpGet("token")]
+        [ServiceFilter(typeof(ModelValidationAttribute))]
         public IActionResult GetToken()
         {
             if (Request.Cookies.ContainsKey("XSRF-TOKEN"))
@@ -207,20 +174,12 @@ namespace CodingCleanProject.Controllers
               }); ;
             return Ok(new { token = tokens.RequestToken });
         }
-        [HttpPost("submit")]
-        public async Task<IActionResult> SubmitData()
+        [HttpGet("test-exception")]
+        public IActionResult TestException()
         {
-            try
-            {
-                await _antiForgery.ValidateRequestAsync(HttpContext);
-
-                return Ok(new { message = "Anti-forgery uspjeno verificiran" });
-            }
-            catch (AntiforgeryValidationException)
-            {
-                return BadRequest("Invalid Anti-forgery token");
-            }
+            throw new Exception("Ovo je test glogal exeptiona");
         }
+
 
     }
 }

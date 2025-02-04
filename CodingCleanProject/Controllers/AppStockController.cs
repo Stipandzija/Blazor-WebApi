@@ -3,6 +3,7 @@ using CodingCleanProject.Interfaces;
 using CodingCleanProject.Helpers;
 using CodingCleanProject.Dtos.Stock;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CodingCleanProject.Controllers
 {
@@ -10,13 +11,15 @@ namespace CodingCleanProject.Controllers
     [ApiController]
     public class AppStockController : Controller
     {
+        private const string StockCacheKey = "stocks";
         private readonly IStockRepository _stockRepository;
         private readonly IMapper _mapper;
-
-        public AppStockController(IStockRepository stockRepository, IMapper mapper)
+        private IMemoryCache _cache;
+        public AppStockController(IMemoryCache memoryCache,IStockRepository stockRepository, IMapper mapper)
         {
             _stockRepository = stockRepository;
             _mapper = mapper;
+            _cache = memoryCache;
         }
 
         private bool IsValidModel() => ModelState.IsValid;
@@ -42,7 +45,10 @@ namespace CodingCleanProject.Controllers
         {
             if (!IsValidModel())
                 return BadRequest(ModelState);
-
+            if (_cache.TryGetValue(StockCacheKey, out IEnumerable<StockDto>? result))
+            {
+                return Ok(result);
+            }
             var stocksModel = await _stockRepository.GetAllAsync();
             var stocksDto = stocksModel.Select(stock => _mapper.StockMapper.ToStockDto(stock)).ToList();
 

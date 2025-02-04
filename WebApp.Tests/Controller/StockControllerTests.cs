@@ -7,6 +7,7 @@ using CodingCleanProject.Repository;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace WebApp.Tests.Controller
@@ -16,12 +17,14 @@ namespace WebApp.Tests.Controller
         private readonly AppStockController _controller;
         private readonly IStockRepository _stockRepository;
         private readonly IMapper _mapper;
+        private IMemoryCache _cache;
         public StockControllerTests()
         {
             //dependency
             _stockRepository = A.Fake<IStockRepository>();
             _mapper = A.Fake<IMapper>();
-            _controller = new AppStockController(_stockRepository, _mapper);
+            _cache = A.Fake<IMemoryCache>();
+            _controller = new AppStockController(_cache, _stockRepository, _mapper);
         }
         [Fact]
         public async void StockControllerTests_GetAllStocks_stocksDto()

@@ -86,6 +86,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddLogging();
+builder.Services.AddTransient<CustomExceptionMiddleware>();
 var app = builder.Build();
 
 
@@ -97,9 +99,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseMiddleware<CustomExceptionMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapControllers();
 

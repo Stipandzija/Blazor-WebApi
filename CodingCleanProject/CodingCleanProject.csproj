@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <UserSecretsId>6739f40f-3147-4d3d-b5c8-253dcaa05e7f</UserSecretsId>
+    <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
@@ -24,6 +27,7 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Identity.Core" Version="9.0.0" />
 		<PackageReference Include="Microsoft.SqlServer.Server" Version="1.0.0" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="StackExchange.Redis" Version="2.8.24" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />

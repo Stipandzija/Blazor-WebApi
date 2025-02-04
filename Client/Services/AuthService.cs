@@ -4,12 +4,16 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.JSInterop;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using static System.Net.WebRequestMethods;
 
 
@@ -78,9 +82,11 @@ namespace BlazorClient.Services
 
         public async Task<bool> LogoutAsync()
         {
-            _authenticationStateProvider.MarkUserAsLoggedOut();
+            //_authenticationStateProvider.MarkUserAsLoggedOut();
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5103/api/account/logout");
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
             await _localStorage.RemoveItemAsync("authToken");
-            var response = await _httpClient.PostAsJsonAsync("api/account/logout","");
+            var response = await _httpClient.SendAsync(request);
 
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
