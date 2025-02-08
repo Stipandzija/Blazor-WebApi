@@ -41,7 +41,7 @@ namespace BlazorClient.Services
             var loginRequest = new { UserName = username, Password = password };
 
             //var response = await _httpClient.PostAsJsonAsync("api/account/login", loginRequest);
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:7061/api/account/login");
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/account/login");
             request.Content = JsonContent.Create(loginRequest);
             if (!string.IsNullOrEmpty(antiforgeryToken))
             {
@@ -83,7 +83,7 @@ namespace BlazorClient.Services
         public async Task<bool> LogoutAsync()
         {
             //_authenticationStateProvider.MarkUserAsLoggedOut();
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5103/api/account/logout");
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/account/logout");
             request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
             await _localStorage.RemoveItemAsync("authToken");
             var response = await _httpClient.SendAsync(request);

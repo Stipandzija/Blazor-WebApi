@@ -13,7 +13,7 @@ builder.RootComponents.Add<App>("#app");
 
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("http://localhost:5103")//promjenit nakon domene
+    BaseAddress = new Uri("http://localhost:5017")//promjenit nakon domene
 });
 
 

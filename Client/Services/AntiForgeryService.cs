@@ -19,7 +19,7 @@ namespace Client.Services
 
         public async Task<string> FetchTokenAsync()
         {
-            var tokenRequest = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5103/api/account/token");
+            var tokenRequest = new HttpRequestMessage(HttpMethod.Get, "api/account/token");
             tokenRequest.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);// nece radit bez Credentials.include
 
             var tokenResponse = await _httpClient.SendAsync(tokenRequest);

@@ -4,7 +4,7 @@
     <ProjectVersion>2.1</ProjectVersion>
     <DockerTargetOS>Windows</DockerTargetOS>
     <DockerPublishLocally>False</DockerPublishLocally>
-    <ProjectGuid>bb0b8222-af20-4981-90c4-f281b6d38b11</ProjectGuid>
+    <ProjectGuid>12ad104c-7c75-4ddd-97ef-ecaff884b718</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://{ServiceIPAddress}{ServicePort}/swagger</DockerServiceUrl>
     <DockerServiceName>codingcleanproject</DockerServiceName>

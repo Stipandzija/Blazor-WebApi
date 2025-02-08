@@ -41,7 +41,7 @@
         {
             var token = await AntiForgeryService.GetTokenAsync();
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5103/api/account/login");
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/account/login");
             request.Headers.Add("X-CSRF-TOKEN", token);
             request.Content = new StringContent(JsonConvert.SerializeObject(loginModel), Encoding.UTF8, "application/json");
             request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);

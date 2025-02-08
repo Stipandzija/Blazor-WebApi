@@ -3,6 +3,10 @@ version: '3.4'
 services:
   codingcleanproject:
     image: ${DOCKER_REGISTRY-}codingcleanproject
+    container_name: WebApp
     build:
       context: .
       dockerfile: CodingCleanProject\Dockerfile
+    ports:
+        - "8080:8080"
+        - "8081:8081" 
